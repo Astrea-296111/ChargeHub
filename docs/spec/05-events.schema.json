@@ -1,0 +1,567 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:chargehub:events:1",
+  "title": "ChargeHub event contracts",
+  "description": "DomainEvent与DeviceEvent二选一，条件字段严格验证。计量单调性、finalSeq完整性和状态转换仍由应用校验。",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/DomainEvent"
+    },
+    {
+      "$ref": "#/$defs/DeviceEvent"
+    }
+  ],
+  "$defs": {
+    "PaymentCreateRequestedPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "orderNo": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "payNo": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "amountFen": {
+          "const": 10000
+        },
+        "currency": {
+          "const": "CNY"
+        }
+      },
+      "required": [
+        "orderNo",
+        "payNo",
+        "amountFen",
+        "currency"
+      ]
+    },
+    "PaymentCapturedPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "orderNo": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "payNo": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "capturedFen": {
+          "const": 10000
+        },
+        "currency": {
+          "const": "CNY"
+        }
+      },
+      "required": [
+        "orderNo",
+        "payNo",
+        "capturedFen",
+        "currency"
+      ]
+    },
+    "PaymentCloseRequestedPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "orderNo": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "payNo": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
+      "required": [
+        "orderNo",
+        "payNo"
+      ]
+    },
+    "ChargeStartRequestedPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "orderNo": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "commandId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sessionNo": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "connectorId": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,18}$"
+        },
+        "deviceId": {
+          "type": "string"
+        },
+        "tariffHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "prepaidFen": {
+          "const": 10000
+        }
+      },
+      "required": [
+        "orderNo",
+        "commandId",
+        "sessionNo",
+        "connectorId",
+        "deviceId",
+        "tariffHash",
+        "prepaidFen"
+      ]
+    },
+    "ChargeStopRequestedPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "orderNo": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "commandId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sessionNo": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "connectorId": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,18}$"
+        },
+        "deviceId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "orderNo",
+        "commandId",
+        "sessionNo",
+        "connectorId",
+        "deviceId"
+      ]
+    },
+    "SessionStoppedPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "orderNo": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sessionNo": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "finalSeq": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "orderNo",
+        "sessionNo",
+        "finalSeq"
+      ]
+    },
+    "BillFinalizedPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "orderNo": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "billNo": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "payableFen": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "refundFen": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "orderNo",
+        "billNo",
+        "payableFen",
+        "refundFen"
+      ]
+    },
+    "RefundRequestedPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "orderNo": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "payNo": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "refundNo": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "amountFen": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "currency": {
+          "const": "CNY"
+        }
+      },
+      "required": [
+        "orderNo",
+        "payNo",
+        "refundNo",
+        "amountFen",
+        "currency"
+      ]
+    },
+    "RefundSucceededPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "orderNo": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "payNo": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "refundNo": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "amountFen": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "currency": {
+          "const": "CNY"
+        }
+      },
+      "required": [
+        "orderNo",
+        "payNo",
+        "refundNo",
+        "amountFen",
+        "currency"
+      ]
+    },
+    "DomainEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "eventType": {
+          "type": "string",
+          "enum": [
+            "PaymentCreateRequested",
+            "PaymentCaptured",
+            "PaymentCloseRequested",
+            "ChargeStartRequested",
+            "ChargeStopRequested",
+            "SessionStopped",
+            "BillFinalized",
+            "RefundRequested",
+            "RefundSucceeded"
+          ]
+        },
+        "schemaVersion": {
+          "const": 1
+        },
+        "aggregateType": {
+          "type": "string",
+          "enum": [
+            "ChargeOrder",
+            "PaymentOrder",
+            "RefundOrder"
+          ]
+        },
+        "aggregateId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "aggregateVersion": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "traceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "payload": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "eventId",
+        "eventType",
+        "schemaVersion",
+        "aggregateType",
+        "aggregateId",
+        "aggregateVersion",
+        "occurredAt",
+        "traceId",
+        "payload"
+      ],
+      "oneOf": [
+        {
+          "properties": {
+            "eventType": {
+              "const": "PaymentCreateRequested"
+            },
+            "payload": {
+              "$ref": "#/$defs/PaymentCreateRequestedPayload"
+            }
+          }
+        },
+        {
+          "properties": {
+            "eventType": {
+              "const": "PaymentCaptured"
+            },
+            "payload": {
+              "$ref": "#/$defs/PaymentCapturedPayload"
+            }
+          }
+        },
+        {
+          "properties": {
+            "eventType": {
+              "const": "PaymentCloseRequested"
+            },
+            "payload": {
+              "$ref": "#/$defs/PaymentCloseRequestedPayload"
+            }
+          }
+        },
+        {
+          "properties": {
+            "eventType": {
+              "const": "ChargeStartRequested"
+            },
+            "payload": {
+              "$ref": "#/$defs/ChargeStartRequestedPayload"
+            }
+          }
+        },
+        {
+          "properties": {
+            "eventType": {
+              "const": "ChargeStopRequested"
+            },
+            "payload": {
+              "$ref": "#/$defs/ChargeStopRequestedPayload"
+            }
+          }
+        },
+        {
+          "properties": {
+            "eventType": {
+              "const": "SessionStopped"
+            },
+            "payload": {
+              "$ref": "#/$defs/SessionStoppedPayload"
+            }
+          }
+        },
+        {
+          "properties": {
+            "eventType": {
+              "const": "BillFinalized"
+            },
+            "payload": {
+              "$ref": "#/$defs/BillFinalizedPayload"
+            }
+          }
+        },
+        {
+          "properties": {
+            "eventType": {
+              "const": "RefundRequested"
+            },
+            "payload": {
+              "$ref": "#/$defs/RefundRequestedPayload"
+            }
+          }
+        },
+        {
+          "properties": {
+            "eventType": {
+              "const": "RefundSucceeded"
+            },
+            "payload": {
+              "$ref": "#/$defs/RefundSucceededPayload"
+            }
+          }
+        }
+      ]
+    },
+    "DeviceEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "eventId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "deviceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "connectorId": {
+          "type": "string",
+          "pattern": "^[1-9][0-9]{0,18}$"
+        },
+        "eventType": {
+          "type": "string",
+          "enum": [
+            "STARTED",
+            "METER",
+            "STOPPED",
+            "STATUS"
+          ]
+        },
+        "sessionNo": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "seqNo": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "meterWh": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "finalSeq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "sampleKind": {
+          "type": "string",
+          "enum": [
+            "START",
+            "NORMAL",
+            "TARIFF_BOUNDARY",
+            "DAY_BOUNDARY",
+            "END"
+          ]
+        },
+        "deviceStatus": {
+          "type": "string",
+          "enum": [
+            "IDLE",
+            "CHARGING",
+            "OFFLINE",
+            "FAULT"
+          ]
+        }
+      },
+      "required": [
+        "eventId",
+        "deviceId",
+        "connectorId",
+        "eventType",
+        "occurredAt"
+      ],
+      "oneOf": [
+        {
+          "properties": {
+            "eventType": {
+              "const": "STARTED"
+            },
+            "seqNo": {
+              "const": 0
+            },
+            "sampleKind": {
+              "const": "START"
+            }
+          },
+          "required": [
+            "sessionNo",
+            "seqNo",
+            "meterWh",
+            "sampleKind"
+          ]
+        },
+        {
+          "properties": {
+            "eventType": {
+              "const": "METER"
+            }
+          },
+          "required": [
+            "sessionNo",
+            "seqNo",
+            "meterWh",
+            "sampleKind"
+          ]
+        },
+        {
+          "properties": {
+            "eventType": {
+              "const": "STOPPED"
+            },
+            "sampleKind": {
+              "const": "END"
+            }
+          },
+          "required": [
+            "sessionNo",
+            "seqNo",
+            "meterWh",
+            "finalSeq",
+            "sampleKind"
+          ]
+        },
+        {
+          "properties": {
+            "eventType": {
+              "const": "STATUS"
+            }
+          },
+          "required": [
+            "deviceStatus"
+          ]
+        }
+      ]
+    }
+  }
+}

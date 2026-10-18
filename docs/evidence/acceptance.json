@@ -1,0 +1,191 @@
+{
+  "simulated": true,
+  "executedAt": "2026-10-18T09:20:55.549237+00:00",
+  "scope": "Live API smoke acceptance; A01–A47 full fault/performance acceptance remains separate",
+  "status": "PASS",
+  "checks": [
+    {
+      "check": "Unauthenticated station request",
+      "result": "PASS",
+      "evidence": {
+        "httpStatus": 401,
+        "code": "UNAUTHENTICATED"
+      }
+    },
+    {
+      "check": "Invalid login password",
+      "result": "PASS",
+      "evidence": {
+        "httpStatus": 401,
+        "code": "INVALID_CREDENTIALS"
+      }
+    },
+    {
+      "check": "Unsigned payment notification",
+      "result": "PASS",
+      "evidence": {
+        "httpStatus": 401,
+        "code": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "check": "Customer cannot publish tariff",
+      "result": "PASS",
+      "evidence": {
+        "httpStatus": 403,
+        "code": "FORBIDDEN"
+      }
+    },
+    {
+      "check": "Invalid query binding returns 400",
+      "result": "PASS",
+      "evidence": {
+        "httpStatus": 400,
+        "code": "INVALID_REQUEST"
+      }
+    },
+    {
+      "check": "Missing Idempotency-Key returns 400",
+      "result": "PASS",
+      "evidence": {
+        "httpStatus": 400,
+        "code": "INVALID_REQUEST"
+      }
+    },
+    {
+      "check": "A11 Same key returns original order",
+      "result": "PASS",
+      "evidence": {
+        "orderNo": "5d4c97b3-72bc-455c-ba88-bc35b95d1692"
+      }
+    },
+    {
+      "check": "A12 Same key with changed connector conflicts",
+      "result": "PASS",
+      "evidence": {
+        "httpStatus": 409,
+        "code": "IDEMPOTENCY_CONFLICT"
+      }
+    },
+    {
+      "check": "A02 Another user cannot read order",
+      "result": "PASS",
+      "evidence": {
+        "httpStatus": 404,
+        "code": "NOT_FOUND"
+      }
+    },
+    {
+      "check": "A02 Another user cannot stop order",
+      "result": "PASS",
+      "evidence": {
+        "httpStatus": 404,
+        "code": "NOT_FOUND"
+      }
+    },
+    {
+      "check": "Another user cannot read funds",
+      "result": "PASS",
+      "evidence": {
+        "httpStatus": 404,
+        "code": "NOT_FOUND"
+      }
+    },
+    {
+      "check": "Another user cannot read bill",
+      "result": "PASS",
+      "evidence": {
+        "httpStatus": 404,
+        "code": "NOT_FOUND"
+      }
+    },
+    {
+      "check": "Same user cannot occupy a second connector",
+      "result": "PASS",
+      "evidence": {
+        "httpStatus": 409,
+        "code": "ACTIVE_ORDER_EXISTS"
+      }
+    },
+    {
+      "check": "Occupied connector rejects another user",
+      "result": "PASS",
+      "evidence": {
+        "httpStatus": 409,
+        "code": "CONNECTOR_BUSY"
+      }
+    },
+    {
+      "check": "Unauthorized requests preserve WAIT_PAY state",
+      "result": "PASS",
+      "evidence": {
+        "orderNo": "5d4c97b3-72bc-455c-ba88-bc35b95d1692",
+        "status": "WAIT_PAY"
+      }
+    },
+    {
+      "check": "Bill unavailable before service is complete",
+      "result": "PASS",
+      "evidence": {
+        "httpStatus": 409,
+        "code": "BILL_NOT_READY"
+      }
+    },
+    {
+      "check": "A14 Duplicate notifications preserve one financial effect",
+      "result": "PASS",
+      "evidence": {
+        "duplicateNotificationCount": 20,
+        "funds": {
+          "orderNo": "5d4c97b3-72bc-455c-ba88-bc35b95d1692",
+          "capturedFen": 10000,
+          "refundReservedFen": 0,
+          "refundSuccessFen": 7400,
+          "netReceivedFen": 2600,
+          "shortfallFen": 0,
+          "financialStatus": "CLOSED",
+          "refunds": [
+            {
+              "amountFen": 7400,
+              "reason": "BALANCE",
+              "status": "SUCCESS",
+              "refundNo": "6f952aeb-47ad-4ddb-adff-351342d91400"
+            }
+          ]
+        },
+        "sessionNo": "d0671a31-6fb1-434b-84d8-d1647404b29a"
+      }
+    },
+    {
+      "check": "20 kWh ordinary-user billing and refund close",
+      "result": "PASS",
+      "evidence": {
+        "amounts": {
+          "totalWh": 20000,
+          "energyFen": 1600,
+          "serviceFen": 1000,
+          "memberDiscountFen": 0,
+          "couponDiscountFen": 0,
+          "payableFen": 2600
+        }
+      }
+    },
+    {
+      "check": "Unpaid cancellation and resource reuse",
+      "result": "PASS",
+      "evidence": {
+        "orderNo": "2b3075c3-bec8-43ab-b01a-c966cac8635e",
+        "funds": {
+          "orderNo": "2b3075c3-bec8-43ab-b01a-c966cac8635e",
+          "capturedFen": 0,
+          "refundReservedFen": 0,
+          "refundSuccessFen": 0,
+          "netReceivedFen": 0,
+          "shortfallFen": 0,
+          "financialStatus": "CLOSED",
+          "refunds": []
+        }
+      }
+    }
+  ]
+}

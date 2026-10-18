@@ -1,0 +1,7 @@
+chargehub-worker-2 Up 11 seconds
+chargehub-worker-1 Up 11 seconds
+chargehub-api-1 Up 11 seconds
+chargehub-mock-device-1 Up 2 minutes (healthy)
+chargehub-mock-gateway-1 Up 2 minutes (healthy)
+chargehub-mysql-1 Up 2 minutes (healthy)
+chargehub-redis-1 Up 2 minutes (healthy)

@@ -1,0 +1,240 @@
+{
+  "schemaVersion": 1,
+  "moneyUnit": "fen",
+  "energyUnit": "Wh",
+  "rounding": "HALF_UP_PER_SEGMENT_COMPONENT",
+  "memberRule": {
+    "discountBasisPoints": 2000,
+    "maxDiscountFen": 300
+  },
+  "vectors": [
+    {
+      "id": "V01",
+      "description": "20kWh会员加满5减3服务费券",
+      "prepaidFen": 10000,
+      "segments": [
+        {
+          "wh": 20000,
+          "energyRateFenPerKwh": 80,
+          "serviceRateFenPerKwh": 50
+        }
+      ],
+      "member": true,
+      "coupon": {
+        "thresholdFen": 500,
+        "discountFen": 300
+      },
+      "expected": {
+        "totalWh": 20000,
+        "energyFen": 1600,
+        "serviceFen": 1000,
+        "memberDiscountFen": 200,
+        "couponDiscountFen": 300,
+        "payableFen": 2100,
+        "refundFen": 7900,
+        "memberConsumed": true,
+        "couponUsed": true,
+        "shortfallFen": 0
+      }
+    },
+    {
+      "id": "V02",
+      "description": "优惠后不满足券门槛",
+      "prepaidFen": 10000,
+      "segments": [
+        {
+          "wh": 10000,
+          "energyRateFenPerKwh": 80,
+          "serviceRateFenPerKwh": 50
+        }
+      ],
+      "member": true,
+      "coupon": {
+        "thresholdFen": 500,
+        "discountFen": 300
+      },
+      "expected": {
+        "totalWh": 10000,
+        "energyFen": 800,
+        "serviceFen": 500,
+        "memberDiscountFen": 100,
+        "couponDiscountFen": 0,
+        "payableFen": 1200,
+        "refundFen": 8800,
+        "memberConsumed": true,
+        "couponUsed": false,
+        "shortfallFen": 0
+      }
+    },
+    {
+      "id": "V03",
+      "description": "会员优惠上限300分",
+      "prepaidFen": 10000,
+      "segments": [
+        {
+          "wh": 40000,
+          "energyRateFenPerKwh": 80,
+          "serviceRateFenPerKwh": 50
+        }
+      ],
+      "member": true,
+      "coupon": {
+        "thresholdFen": 500,
+        "discountFen": 300
+      },
+      "expected": {
+        "totalWh": 40000,
+        "energyFen": 3200,
+        "serviceFen": 2000,
+        "memberDiscountFen": 300,
+        "couponDiscountFen": 300,
+        "payableFen": 4600,
+        "refundFen": 5400,
+        "memberConsumed": true,
+        "couponUsed": true,
+        "shortfallFen": 0
+      }
+    },
+    {
+      "id": "V04",
+      "description": "跨费率分段分别舍入",
+      "prepaidFen": 10000,
+      "segments": [
+        {
+          "wh": 3333,
+          "energyRateFenPerKwh": 81,
+          "serviceRateFenPerKwh": 39
+        },
+        {
+          "wh": 6667,
+          "energyRateFenPerKwh": 121,
+          "serviceRateFenPerKwh": 59
+        }
+      ],
+      "member": false,
+      "coupon": null,
+      "expected": {
+        "totalWh": 10000,
+        "energyFen": 1077,
+        "serviceFen": 523,
+        "memberDiscountFen": 0,
+        "couponDiscountFen": 0,
+        "payableFen": 1600,
+        "refundFen": 8400,
+        "memberConsumed": false,
+        "couponUsed": false,
+        "shortfallFen": 0
+      }
+    },
+    {
+      "id": "V05",
+      "description": "零电量不消耗权益全退",
+      "prepaidFen": 10000,
+      "segments": [
+        {
+          "wh": 0,
+          "energyRateFenPerKwh": 80,
+          "serviceRateFenPerKwh": 50
+        }
+      ],
+      "member": true,
+      "coupon": {
+        "thresholdFen": 0,
+        "discountFen": 300
+      },
+      "expected": {
+        "totalWh": 0,
+        "energyFen": 0,
+        "serviceFen": 0,
+        "memberDiscountFen": 0,
+        "couponDiscountFen": 0,
+        "payableFen": 0,
+        "refundFen": 10000,
+        "memberConsumed": false,
+        "couponUsed": false,
+        "shortfallFen": 0
+      }
+    },
+    {
+      "id": "V06",
+      "description": "券优惠不超过剩余服务费",
+      "prepaidFen": 10000,
+      "segments": [
+        {
+          "wh": 1000,
+          "energyRateFenPerKwh": 80,
+          "serviceRateFenPerKwh": 50
+        }
+      ],
+      "member": false,
+      "coupon": {
+        "thresholdFen": 0,
+        "discountFen": 300
+      },
+      "expected": {
+        "totalWh": 1000,
+        "energyFen": 80,
+        "serviceFen": 50,
+        "memberDiscountFen": 0,
+        "couponDiscountFen": 50,
+        "payableFen": 80,
+        "refundFen": 9920,
+        "memberConsumed": false,
+        "couponUsed": true,
+        "shortfallFen": 0
+      }
+    },
+    {
+      "id": "V07",
+      "description": "超预付款须记录差异不截断账单",
+      "prepaidFen": 10000,
+      "segments": [
+        {
+          "wh": 100000,
+          "energyRateFenPerKwh": 100,
+          "serviceRateFenPerKwh": 100
+        }
+      ],
+      "member": false,
+      "coupon": null,
+      "expected": {
+        "totalWh": 100000,
+        "energyFen": 10000,
+        "serviceFen": 10000,
+        "memberDiscountFen": 0,
+        "couponDiscountFen": 0,
+        "payableFen": 20000,
+        "refundFen": 0,
+        "memberConsumed": false,
+        "couponUsed": false,
+        "shortfallFen": 10000
+      }
+    },
+    {
+      "id": "V08",
+      "description": "半分舍入边界",
+      "prepaidFen": 10000,
+      "segments": [
+        {
+          "wh": 5,
+          "energyRateFenPerKwh": 100,
+          "serviceRateFenPerKwh": 100
+        }
+      ],
+      "member": false,
+      "coupon": null,
+      "expected": {
+        "totalWh": 5,
+        "energyFen": 1,
+        "serviceFen": 1,
+        "memberDiscountFen": 0,
+        "couponDiscountFen": 0,
+        "payableFen": 2,
+        "refundFen": 9998,
+        "memberConsumed": false,
+        "couponUsed": false,
+        "shortfallFen": 0
+      }
+    }
+  ]
+}

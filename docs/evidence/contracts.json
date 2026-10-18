@@ -1,0 +1,116 @@
+{
+  "executedAt": "2026-10-18T13:57:08.950788+00:00",
+  "api": "http://127.0.0.1:8080",
+  "responseChecks": 13,
+  "passed": 13,
+  "failed": 0,
+  "validatedSchemas": [
+    "BenefitsResponse",
+    "BillResponse",
+    "CouponPageResponse",
+    "CouponTemplatePageResponse",
+    "CurrentUserResponse",
+    "FundsResponse",
+    "OrderPageResponse",
+    "OrderResponse",
+    "ReconciliationPageResponse",
+    "StationPageResponse",
+    "TokenResponse"
+  ],
+  "businessWrites": 0,
+  "authenticationMode": "login-permitted",
+  "checks": [
+    {
+      "path": "/v1/auth/token",
+      "schema": "TokenResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/auth/me",
+      "schema": "CurrentUserResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/stations",
+      "schema": "StationPageResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/stations?limit=1",
+      "schema": "StationPageResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/me/benefits",
+      "schema": "BenefitsResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/me/coupons",
+      "schema": "CouponPageResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/coupon-templates",
+      "schema": "CouponTemplatePageResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/charge-orders?limit=20",
+      "schema": "OrderPageResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/charge-orders/92db06fd-25fb-4ed1-bac6-87cab7b32fb4",
+      "schema": "OrderResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/charge-orders/92db06fd-25fb-4ed1-bac6-87cab7b32fb4/funds",
+      "schema": "FundsResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/charge-orders/92db06fd-25fb-4ed1-bac6-87cab7b32fb4/bill",
+      "schema": "BillResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/auth/token",
+      "schema": "TokenResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/admin/reconciliation-items",
+      "schema": "ReconciliationPageResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    }
+  ],
+  "skipped": []
+}

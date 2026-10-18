@@ -1,0 +1,229 @@
+{
+  "checkedAt": "2026-10-18",
+  "scope": "Design arithmetic and structural consistency only; no running application has been built.",
+  "results": [
+    {
+      "check": "V01",
+      "status": "passed",
+      "details": {
+        "totalWh": 20000,
+        "energyFen": 1600,
+        "serviceFen": 1000,
+        "memberDiscountFen": 200,
+        "couponDiscountFen": 300,
+        "payableFen": 2100,
+        "refundFen": 7900,
+        "memberConsumed": true,
+        "couponUsed": true,
+        "shortfallFen": 0
+      }
+    },
+    {
+      "check": "V02",
+      "status": "passed",
+      "details": {
+        "totalWh": 10000,
+        "energyFen": 800,
+        "serviceFen": 500,
+        "memberDiscountFen": 100,
+        "couponDiscountFen": 0,
+        "payableFen": 1200,
+        "refundFen": 8800,
+        "memberConsumed": true,
+        "couponUsed": false,
+        "shortfallFen": 0
+      }
+    },
+    {
+      "check": "V03",
+      "status": "passed",
+      "details": {
+        "totalWh": 40000,
+        "energyFen": 3200,
+        "serviceFen": 2000,
+        "memberDiscountFen": 300,
+        "couponDiscountFen": 300,
+        "payableFen": 4600,
+        "refundFen": 5400,
+        "memberConsumed": true,
+        "couponUsed": true,
+        "shortfallFen": 0
+      }
+    },
+    {
+      "check": "V04",
+      "status": "passed",
+      "details": {
+        "totalWh": 10000,
+        "energyFen": 1077,
+        "serviceFen": 523,
+        "memberDiscountFen": 0,
+        "couponDiscountFen": 0,
+        "payableFen": 1600,
+        "refundFen": 8400,
+        "memberConsumed": false,
+        "couponUsed": false,
+        "shortfallFen": 0
+      }
+    },
+    {
+      "check": "V05",
+      "status": "passed",
+      "details": {
+        "totalWh": 0,
+        "energyFen": 0,
+        "serviceFen": 0,
+        "memberDiscountFen": 0,
+        "couponDiscountFen": 0,
+        "payableFen": 0,
+        "refundFen": 10000,
+        "memberConsumed": false,
+        "couponUsed": false,
+        "shortfallFen": 0
+      }
+    },
+    {
+      "check": "V06",
+      "status": "passed",
+      "details": {
+        "totalWh": 1000,
+        "energyFen": 80,
+        "serviceFen": 50,
+        "memberDiscountFen": 0,
+        "couponDiscountFen": 50,
+        "payableFen": 80,
+        "refundFen": 9920,
+        "memberConsumed": false,
+        "couponUsed": true,
+        "shortfallFen": 0
+      }
+    },
+    {
+      "check": "V07",
+      "status": "passed",
+      "details": {
+        "totalWh": 100000,
+        "energyFen": 10000,
+        "serviceFen": 10000,
+        "memberDiscountFen": 0,
+        "couponDiscountFen": 0,
+        "payableFen": 20000,
+        "refundFen": 0,
+        "memberConsumed": false,
+        "couponUsed": false,
+        "shortfallFen": 10000
+      }
+    },
+    {
+      "check": "V08",
+      "status": "passed",
+      "details": {
+        "totalWh": 5,
+        "energyFen": 1,
+        "serviceFen": 1,
+        "memberDiscountFen": 0,
+        "couponDiscountFen": 0,
+        "payableFen": 2,
+        "refundFen": 9998,
+        "memberConsumed": false,
+        "couponUsed": false,
+        "shortfallFen": 0
+      }
+    },
+    {
+      "check": "OpenAPI structural checks",
+      "status": "passed",
+      "details": {
+        "operations": 25,
+        "schemas": 65,
+        "checks": [
+          "YAML parse",
+          "all internal refs resolved",
+          "operationId unique",
+          "path parameters declared",
+          "business writes require idempotency key"
+        ]
+      }
+    },
+    {
+      "check": "Event PaymentCreateRequested",
+      "status": "passed",
+      "details": "valid payload accepted, missing required payload rejected"
+    },
+    {
+      "check": "Event PaymentCaptured",
+      "status": "passed",
+      "details": "valid payload accepted, missing required payload rejected"
+    },
+    {
+      "check": "Event PaymentCloseRequested",
+      "status": "passed",
+      "details": "valid payload accepted, missing required payload rejected"
+    },
+    {
+      "check": "Event ChargeStartRequested",
+      "status": "passed",
+      "details": "valid payload accepted, missing required payload rejected"
+    },
+    {
+      "check": "Event ChargeStopRequested",
+      "status": "passed",
+      "details": "valid payload accepted, missing required payload rejected"
+    },
+    {
+      "check": "Event SessionStopped",
+      "status": "passed",
+      "details": "valid payload accepted, missing required payload rejected"
+    },
+    {
+      "check": "Event BillFinalized",
+      "status": "passed",
+      "details": "valid payload accepted, missing required payload rejected"
+    },
+    {
+      "check": "Event RefundRequested",
+      "status": "passed",
+      "details": "valid payload accepted, missing required payload rejected"
+    },
+    {
+      "check": "Event RefundSucceeded",
+      "status": "passed",
+      "details": "valid payload accepted, missing required payload rejected"
+    },
+    {
+      "check": "Device event checks",
+      "status": "passed",
+      "details": "valid STOPPED accepted; missing finalSeq, negative Wh and invalid UUID rejected"
+    },
+    {
+      "check": "SQL static checks",
+      "status": "passed",
+      "details": {
+        "tables": 30,
+        "checks": [
+          "unique table names",
+          "primary keys",
+          "InnoDB",
+          "critical unique constraints",
+          "UTC initialization",
+          "no destructive DROP"
+        ]
+      }
+    },
+    {
+      "check": "Plan coverage",
+      "status": "passed",
+      "details": {
+        "acceptanceScenarios": 47,
+        "tasks": 12
+      }
+    }
+  ],
+  "pending": [
+    "Execute Flyway migration in real MySQL 8.4",
+    "Run full OpenAPI 3.0.3 and JSON Schema 2020-12 validators",
+    "Build locked Java dependency graph",
+    "Execute all business concurrency and failure acceptance scenarios",
+    "Run load tests and deployment restore drill"
+  ]
+}

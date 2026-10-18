@@ -1,0 +1,80 @@
+{
+  "com.chargehub.app.BenefitConcurrencyTest": {
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "com.chargehub.app.ReconciliationMysqlTest": {
+    "tests": 1,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "com.chargehub.app.WorkflowMysqlTest": {
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "com.chargehub.charging.SessionServiceTest": {
+    "tests": 15,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "com.chargehub.identity.TokenServiceTest": {
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "com.chargehub.infrastructure.ApiResponseTest": {
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "com.chargehub.infrastructure.HmacTest": {
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "com.chargehub.payment.PaymentServiceTest": {
+    "tests": 7,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "com.chargehub.reconcile.ChannelCsvTest": {
+    "tests": 16,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "com.chargehub.reconcile.ReconciliationComparisonTest": {
+    "tests": 5,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "com.chargehub.reconcile.ReconciliationServiceTest": {
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "com.chargehub.station.BillingCalculatorTest": {
+    "tests": 2,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "com.chargehub.station.TariffRulesTest": {
+    "tests": 3,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  }
+}

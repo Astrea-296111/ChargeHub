@@ -1,0 +1,148 @@
+{
+  "simulated": true,
+  "executedAt": "2026-10-18T13:58:05.170687+00:00",
+  "scope": "Four targeted live recovery cases; not full A01–A47 acceptance",
+  "status": "PASS",
+  "checks": [
+    {
+      "check": "payment-notification-lost",
+      "status": "PASS",
+      "evidence": {
+        "orderNo": "13933208-55dc-40f8-9987-53d1eaeb0ed1",
+        "payNo": "2d69657a-3f6d-41a7-9752-1916aad307ec",
+        "funds": {
+          "orderNo": "13933208-55dc-40f8-9987-53d1eaeb0ed1",
+          "capturedFen": 10000,
+          "refundReservedFen": 0,
+          "refundSuccessFen": 7400,
+          "netReceivedFen": 2600,
+          "shortfallFen": 0,
+          "financialStatus": "CLOSED",
+          "refunds": [
+            {
+              "reason": "BALANCE",
+              "status": "SUCCESS",
+              "refundNo": "ce83fa85-c263-4cc2-9ac9-43d5e26874f2",
+              "amountFen": 7400
+            }
+          ]
+        },
+        "undeliveredChannelEvents": [
+          "0184d8ee-1ff0-4593-a863-d596cd212ab8",
+          "37b6ec2d-8983-4ba3-998d-7bf05831690c"
+        ]
+      }
+    },
+    {
+      "check": "start-response-lost",
+      "status": "PASS",
+      "evidence": {
+        "orderNo": "699749cb-b5f1-447a-a779-e69fd61c1636",
+        "payNo": "0350d9b3-7067-4a9c-be00-743d0b0f8838",
+        "sessionNo": "286a85d1-0944-44e0-b9bd-13e553361030",
+        "amounts": {
+          "totalWh": 20000,
+          "energyFen": 1600,
+          "serviceFen": 1000,
+          "memberDiscountFen": 0,
+          "couponDiscountFen": 0,
+          "payableFen": 2600
+        },
+        "funds": {
+          "orderNo": "699749cb-b5f1-447a-a779-e69fd61c1636",
+          "capturedFen": 10000,
+          "refundReservedFen": 0,
+          "refundSuccessFen": 7400,
+          "netReceivedFen": 2600,
+          "shortfallFen": 0,
+          "financialStatus": "CLOSED",
+          "refunds": [
+            {
+              "reason": "BALANCE",
+              "status": "SUCCESS",
+              "refundNo": "95ff61e9-b2c2-4273-b8f5-003aa27cf793",
+              "amountFen": 7400
+            }
+          ]
+        },
+        "refundNo": "95ff61e9-b2c2-4273-b8f5-003aa27cf793"
+      }
+    },
+    {
+      "check": "refund-response-and-notification-lost",
+      "status": "PASS",
+      "evidence": {
+        "orderNo": "b27c1eeb-f07c-4a7e-b950-da670e5423d9",
+        "payNo": "91516be4-66a4-48fe-bf1a-c0e458acdf80",
+        "sessionNo": "90597664-9d7b-490b-8cb9-53c9ba8fc7f9",
+        "amounts": {
+          "totalWh": 20000,
+          "energyFen": 1600,
+          "serviceFen": 1000,
+          "memberDiscountFen": 0,
+          "couponDiscountFen": 0,
+          "payableFen": 2600
+        },
+        "funds": {
+          "orderNo": "b27c1eeb-f07c-4a7e-b950-da670e5423d9",
+          "capturedFen": 10000,
+          "refundReservedFen": 0,
+          "refundSuccessFen": 7400,
+          "netReceivedFen": 2600,
+          "shortfallFen": 0,
+          "financialStatus": "CLOSED",
+          "refunds": [
+            {
+              "reason": "BALANCE",
+              "status": "SUCCESS",
+              "refundNo": "35ec142c-2531-444c-8a57-12d6af79ada0",
+              "amountFen": 7400
+            }
+          ]
+        },
+        "refundNo": "35ec142c-2531-444c-8a57-12d6af79ada0",
+        "undeliveredRefundEvent": "0e88dd90-67ea-432d-951c-4a5f866ba48f"
+      }
+    },
+    {
+      "check": "metering-boundary-lost",
+      "status": "PASS",
+      "evidence": {
+        "orderNo": "a9e22bfb-33ce-4f15-9c24-57bfea25a81e",
+        "payNo": "5a9a1aa7-ef60-463c-8e5a-ef6c88a672f4",
+        "sessionNo": "419cb45d-f290-4850-9918-e7dcc299258b",
+        "amounts": {
+          "totalWh": 20000,
+          "energyFen": 1714,
+          "serviceFen": 1028,
+          "memberDiscountFen": 0,
+          "couponDiscountFen": 0,
+          "payableFen": 2742
+        },
+        "funds": {
+          "orderNo": "a9e22bfb-33ce-4f15-9c24-57bfea25a81e",
+          "capturedFen": 10000,
+          "refundReservedFen": 0,
+          "refundSuccessFen": 7258,
+          "netReceivedFen": 2742,
+          "shortfallFen": 0,
+          "financialStatus": "CLOSED",
+          "refunds": [
+            {
+              "reason": "BALANCE",
+              "status": "SUCCESS",
+              "refundNo": "ca12c15a-7670-4893-920d-5f9a22b37dc8",
+              "amountFen": 7258
+            }
+          ]
+        },
+        "refundNo": "ca12c15a-7670-4893-920d-5f9a22b37dc8",
+        "missingBoundaryEventIds": [
+          "9b8c48f3-75ad-45c5-b035-c5bf26ea088a"
+        ],
+        "incompleteBillObserved": true,
+        "recovery": "Original device boundary replay; no energy interpolation"
+      }
+    }
+  ]
+}

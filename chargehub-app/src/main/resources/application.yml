@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: chargehub
+  profiles:
+    default: dev,api,worker
+  datasource:
+    url: ${CHARGEHUB_JDBC_URL:jdbc:mysql://127.0.0.1:3306/chargehub?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8}
+    username: ${CHARGEHUB_DB_USER:chargehub}
+    password: ${CHARGEHUB_DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 12
+      transaction-isolation: TRANSACTION_READ_COMMITTED
+      connection-init-sql: SET time_zone = '+00:00'
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
+  task:
+    scheduling:
+      pool:
+        size: 2
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 11MB
+server:
+  address: ${CHARGEHUB_BIND_ADDRESS:127.0.0.1}
+  port: ${CHARGEHUB_PORT:8080}
+  tomcat:
+    max-http-form-post-size: 11MB
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
+  endpoint:
+    health:
+      show-details: never
+chargehub:
+  callback-url: ${CHARGEHUB_CALLBACK_URL:http://127.0.0.1:8080}
+  payment-url: ${CHARGEHUB_PAYMENT_URL:http://127.0.0.1:18081}
+  device-url: ${CHARGEHUB_DEVICE_URL:http://127.0.0.1:18082}
+  payment-key: ${CHARGEHUB_PAYMENT_KEY}
+  device-key: ${CHARGEHUB_DEVICE_KEY}
+  control-key: ${CHARGEHUB_CONTROL_KEY}
+logging:
+  level:
+    root: INFO
+    org.mybatis: WARN
+  structured:
+    format:
+      console: ecs

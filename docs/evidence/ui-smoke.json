@@ -1,0 +1,143 @@
+{
+  "simulated": true,
+  "status": "PASS",
+  "executedAt": "2026-10-18T09:21:03.389Z",
+  "username": "customer",
+  "orderNo": "1d25a815-8197-4ded-84f4-420124e51178",
+  "checkCount": 4,
+  "checks": [
+    "Real customer login and API-backed workspace",
+    "Select available connector and obtain real 20 kWh quote of 2600 fen",
+    "Create actual WAIT_PAY order using quoted tariff version",
+    "Cancel created order and observe CANCELED from API"
+  ],
+  "requests": [
+    {
+      "method": "POST",
+      "path": "/v1/auth/token",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/v1/coupon-templates",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/v1/charge-orders",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/v1/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/v1/me/coupons",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/v1/me/benefits",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/v1/charge-quotes",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/v1/charge-orders",
+      "status": 201
+    },
+    {
+      "method": "GET",
+      "path": "/v1/coupon-templates",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/v1/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/v1/me/coupons",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/v1/me/benefits",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/v1/charge-orders",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/v1/charge-orders/1d25a815-8197-4ded-84f4-420124e51178",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/v1/charge-orders/1d25a815-8197-4ded-84f4-420124e51178/funds",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/v1/charge-orders/1d25a815-8197-4ded-84f4-420124e51178/bill",
+      "status": 409
+    },
+    {
+      "method": "POST",
+      "path": "/v1/charge-orders/1d25a815-8197-4ded-84f4-420124e51178/cancel",
+      "status": 202
+    },
+    {
+      "method": "GET",
+      "path": "/v1/me/coupons",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/v1/coupon-templates",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/v1/charge-orders",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/v1/me/benefits",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/v1/stations",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/v1/charge-orders/1d25a815-8197-4ded-84f4-420124e51178",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/v1/charge-orders/1d25a815-8197-4ded-84f4-420124e51178/funds",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/v1/charge-orders/1d25a815-8197-4ded-84f4-420124e51178/bill",
+      "status": 409
+    }
+  ],
+  "pageErrors": [],
+  "screenshot": "/workspace/ChargeHub/.local/reports/console.png"
+}

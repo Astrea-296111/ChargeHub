@@ -1,0 +1,12 @@
+test_boundary_samples_and_prepaid_loss_limit (test_simulators.IndependentFactsTest.test_boundary_samples_and_prepaid_loss_limit) ... ok
+test_capture_close_race_has_single_channel_winner (test_simulators.IndependentFactsTest.test_capture_close_race_has_single_channel_winner) ... ok
+test_conflicting_business_parameters_and_durable_restart (test_simulators.IndependentFactsTest.test_conflicting_business_parameters_and_durable_restart) ... ok
+test_definitive_refund_rejection_is_stable_failed_fact (test_simulators.IndependentFactsTest.test_definitive_refund_rejection_is_stable_failed_fact) ... ok
+test_demo_device_facts_stable_session_and_query_latest (test_simulators.IndependentFactsTest.test_demo_device_facts_stable_session_and_query_latest) ... ok
+test_hmac_key_ownership_tampering_and_nonce_replay (test_simulators.IndependentFactsTest.test_hmac_key_ownership_tampering_and_nonce_replay) ... ok
+test_idempotent_channel_refund_and_lost_notification_keep_facts (test_simulators.IndependentFactsTest.test_idempotent_channel_refund_and_lost_notification_keep_facts) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.057s
+
+OK

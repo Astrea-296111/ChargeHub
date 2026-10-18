@@ -1,0 +1,97 @@
+name: chargehub
+x-app-env: &app-env
+  CHARGEHUB_JDBC_URL: jdbc:mysql://mysql:3306/chargehub?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8
+  CHARGEHUB_DB_USER: chargehub
+  CHARGEHUB_DB_PASSWORD: ${CHARGEHUB_DB_PASSWORD:?run python3 scripts/dev-env.py}
+  CHARGEHUB_PAYMENT_KEY: ${CHARGEHUB_PAYMENT_KEY:?required}
+  CHARGEHUB_DEVICE_KEY: ${CHARGEHUB_DEVICE_KEY:?required}
+  CHARGEHUB_CONTROL_KEY: ${CHARGEHUB_CONTROL_KEY:?required}
+  CHARGEHUB_DEMO_PASSWORD: ${CHARGEHUB_DEMO_PASSWORD:?required}
+  CHARGEHUB_FIXED_TIME: ${CHARGEHUB_FIXED_TIME:-}
+  CHARGEHUB_PAYMENT_URL: http://mock-gateway:18081
+  CHARGEHUB_DEVICE_URL: http://mock-device:18082
+  CHARGEHUB_CALLBACK_URL: http://api:8080
+  CHARGEHUB_BIND_ADDRESS: 0.0.0.0
+x-sim-env: &sim-env
+  CHARGEHUB_PAYMENT_KEY: ${CHARGEHUB_PAYMENT_KEY:?required}
+  CHARGEHUB_DEVICE_KEY: ${CHARGEHUB_DEVICE_KEY:?required}
+  CHARGEHUB_CONTROL_KEY: ${CHARGEHUB_CONTROL_KEY:?required}
+  CHARGEHUB_FIXED_TIME: ${CHARGEHUB_FIXED_TIME:-}
+  CHARGEHUB_CALLBACK_URL: http://api:8080
+  PAYMENT_DB: /data/payment.sqlite3
+  DEVICE_DB: /data/device.sqlite3
+services:
+  mysql:
+    image: mysql:8.4.7@sha256:0426ec38c7a10aa45ba383887df7878f74ee70e2fd589c7b69207f3577901903
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?required}
+      MYSQL_DATABASE: chargehub
+      MYSQL_USER: chargehub
+      MYSQL_PASSWORD: ${CHARGEHUB_DB_PASSWORD:?required}
+      TZ: UTC
+    command: ["--default-time-zone=+00:00", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_0900_ai_ci"]
+    ports: ["127.0.0.1:3306:3306"]
+    volumes: [mysql-data:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_PASSWORD mysql -u chargehub -h 127.0.0.1 -e 'SELECT 1' chargehub >/dev/null 2>&1"]
+      interval: 3s
+      timeout: 3s
+      retries: 40
+  redis:
+    image: redis:7.4-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+  mock-gateway:
+    build: ./simulators
+    image: chargehub-simulator:1.0.0
+    environment: *sim-env
+    ports: ["127.0.0.1:18081:18081"]
+    volumes: [gateway-data:/data]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:18081/health')"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  mock-device:
+    image: chargehub-simulator:1.0.0
+    build: ./simulators
+    command: ["python", "device.py"]
+    environment: *sim-env
+    ports: ["127.0.0.1:18082:18082"]
+    volumes: [device-data:/data]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:18082/health')"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  api:
+    build: .
+    image: chargehub-app:1.0.0
+    environment:
+      <<: *app-env
+      SPRING_PROFILES_ACTIVE: dev,api
+    ports: ["127.0.0.1:8080:8080"]
+    depends_on:
+      mysql: {condition: service_healthy}
+      mock-gateway: {condition: service_healthy}
+      mock-device: {condition: service_healthy}
+  worker:
+    image: chargehub-app:1.0.0
+    build: .
+    environment:
+      <<: *app-env
+      SPRING_PROFILES_ACTIVE: dev,worker
+    depends_on:
+      mysql: {condition: service_healthy}
+      mock-gateway: {condition: service_healthy}
+      mock-device: {condition: service_healthy}
+volumes:
+  mysql-data:
+  redis-data:
+  gateway-data:
+  device-data:

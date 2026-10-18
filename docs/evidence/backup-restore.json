@@ -1,0 +1,24 @@
+{
+  "status": "PASS",
+  "backupSha256": "273ce99f23b4d1515172d9773a49292e834f43128b43e506bf07de283455fa2e",
+  "restoreDatabase": "chargehub_restore_fb286ccde705_test",
+  "verifiedTableCounts": {
+    "iam_user": 6,
+    "charge_order": 8,
+    "charge_session": 6,
+    "charge_bill": 6,
+    "charge_bill_item": 7,
+    "payment_order": 6,
+    "refund_order": 6,
+    "cash_entry": 12,
+    "member_quota": 1,
+    "quota_ledger": 2,
+    "coupon_template": 1,
+    "user_coupon": 1,
+    "benefit_reservation": 8,
+    "flyway_schema_history": 2
+  },
+  "invariantViolations": 0,
+  "elapsedSeconds": 4.429,
+  "scope": "MySQL backup/restore only; simulator volumes and application rollback are separate checks"
+}

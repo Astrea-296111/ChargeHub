@@ -1,0 +1,2135 @@
+openapi: 3.0.3
+info:
+  title: ChargeHub 后端核心契约
+  version: 1.0.0
+  description: 设计基线，尚未连接运行中的后端。金额单位分，电量Wh，时间RFC3339 UTC，数据库64位ID用字符串。首版固定预付10000分。POST业务写要求Idempotency-Key，登录、报价及回调除外。设备事件的条件必填详见05-events.schema.json。管理接口必须执行描述中的角色检查。
+servers:
+- url: http://localhost:8080
+  description: 计划中的本地API地址
+security:
+- BearerAuth: []
+tags:
+- name: Auth
+- name: Station
+- name: Order
+- name: Benefit
+- name: Integration
+- name: Admin
+paths:
+  /v1/auth/token:
+    post:
+      operationId: login
+      summary: 演示账号登录
+      description: ''
+      tags:
+      - Auth
+      responses:
+        '200':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      security: []
+  /v1/stations:
+    get:
+      operationId: listStations
+      summary: 查询站点和枪
+      description: ''
+      tags:
+      - Station
+      responses:
+        '200':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StationPageResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - &id001
+        $ref: '#/components/parameters/Cursor'
+      - &id002
+        $ref: '#/components/parameters/Limit'
+  /v1/charge-quotes:
+    post:
+      operationId: estimateCharge
+      summary: 估算费用不占用资源
+      description: 预计电量不是实际电量。返回的费率版本用于建单时重新校验。
+      tags:
+      - Order
+      responses:
+        '200':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuoteResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuoteRequest'
+  /v1/charge-orders:
+    post:
+      operationId: createChargeOrder
+      summary: 创建充电订单并预占权益
+      description: 用户身份从令牌取得。服务端固定预付10000分，校验单用户和单枪占用。
+      tags:
+      - Order
+      responses:
+        '201':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+    get:
+      operationId: listMyOrders
+      summary: 查询自己的订单
+      description: ''
+      tags:
+      - Order
+      responses:
+        '200':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderPageResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - *id001
+      - *id002
+  /v1/charge-orders/{orderNo}:
+    get:
+      operationId: getMyOrder
+      summary: 查询订单状态
+      description: 必须校验订单归属，管理员查询同样记录授权行为。
+      tags:
+      - Order
+      responses:
+        '200':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: orderNo
+        in: path
+        required: true
+        schema: &id003
+          type: string
+          format: uuid
+  /v1/charge-orders/{orderNo}/payment:
+    post:
+      operationId: createPayment
+      summary: 创建或返回原预付支付单
+      description: 金额不接受客户端输入。渠道创建和付款确认异步执行。
+      tags:
+      - Order
+      responses:
+        '202':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: orderNo
+        in: path
+        required: true
+        schema: *id003
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /v1/charge-orders/{orderNo}/cancel:
+    post:
+      operationId: cancelOrder
+      summary: 请求取消并确认渠道事实
+      description: WAIT_PAY允许取消。START_PENDING或结果未知不能直接释放；无会话且符合条件才取消。
+      tags:
+      - Order
+      responses:
+        '202':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandAcceptedResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: orderNo
+        in: path
+        required: true
+        schema: *id003
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /v1/charge-orders/{orderNo}/stop:
+    post:
+      operationId: stopCharge
+      summary: 请求停止充电
+      description: ''
+      tags:
+      - Order
+      responses:
+        '202':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandAcceptedResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: orderNo
+        in: path
+        required: true
+        schema: *id003
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /v1/charge-orders/{orderNo}/bill:
+    get:
+      operationId: getBill
+      summary: 查看正式账单
+      description: 未出账返回409和BILLING_DATA_INCOMPLETE。不得生成展示用假账单。
+      tags:
+      - Order
+      responses:
+        '200':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BillResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: orderNo
+        in: path
+        required: true
+        schema: *id003
+  /v1/charge-orders/{orderNo}/funds:
+    get:
+      operationId: getFunds
+      summary: 查询支付退款与财务状态
+      description: ''
+      tags:
+      - Order
+      responses:
+        '200':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FundsResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: orderNo
+        in: path
+        required: true
+        schema: *id003
+  /v1/me/benefits:
+    get:
+      operationId: getMyBenefits
+      summary: 查询会员月度额度
+      description: ''
+      tags:
+      - Benefit
+      responses:
+        '200':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BenefitsResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/coupon-templates:
+    get:
+      operationId: listClaimableCoupons
+      summary: 查询可领取模板
+      description: ''
+      tags:
+      - Benefit
+      responses:
+        '200':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CouponTemplatePageResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - *id001
+      - *id002
+  /v1/coupon-templates/{templateId}/claims:
+    post:
+      operationId: claimCoupon
+      summary: 领取一张用户券
+      description: ''
+      tags:
+      - Benefit
+      responses:
+        '201':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCouponResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: templateId
+        in: path
+        required: true
+        schema: &id007
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 数据库64位编号以字符串输出
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /v1/me/coupons:
+    get:
+      operationId: listMyCoupons
+      summary: 查询自己的券
+      description: ''
+      tags:
+      - Benefit
+      responses:
+        '200':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CouponPageResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - *id001
+      - *id002
+  /integrations/devices/events:
+    post:
+      operationId: receiveDeviceEvent
+      summary: 设备事件收件
+      description: 验签并校验设备归属。持久化收件后确认，异步归并计量；完整条件字段见JSON Schema。
+      tags:
+      - Integration
+      responses:
+        '200':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - &id004
+        name: X-Key-Id
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 100
+      - &id005
+        name: X-Timestamp
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 100
+      - &id006
+        name: X-Nonce
+        in: header
+        required: true
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 100
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceEvent'
+      security:
+      - CallbackHmac: []
+  /integrations/payments/mock/notifications:
+    post:
+      operationId: receiveMockPayment
+      summary: 模拟渠道支付退款通知
+      description: 有效事件在资金事实和Outbox提交后返回APPLIED；已持久化差异返回QUARANTINED。失败时渠道按原事件号重试并重新签名。
+      tags:
+      - Integration
+      responses:
+        '200':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceiptResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - *id004
+      - *id005
+      - *id006
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentNotification'
+      security:
+      - CallbackHmac: []
+  /v1/admin/tariffs:
+    post:
+      operationId: createTariff
+      summary: OPS创建费率草稿
+      description: OPS或ADMIN。跨行完整覆盖与不重叠必须在应用校验。
+      tags:
+      - Admin
+      responses:
+        '201':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TariffResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTariffRequest'
+  /v1/admin/tariffs/{tariffId}/publish:
+    post:
+      operationId: publishTariff
+      summary: OPS发布新费率
+      description: OPS或ADMIN。发布后不可原地修改，原订单继续使用旧快照。
+      tags:
+      - Admin
+      responses:
+        '200':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TariffResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: tariffId
+        in: path
+        required: true
+        schema: *id007
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /v1/admin/coupon-templates:
+    post:
+      operationId: createCouponTemplate
+      summary: OPS创建券模板草稿
+      description: ''
+      tags:
+      - Admin
+      responses:
+        '201':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCouponTemplateResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCouponTemplateRequest'
+  /v1/admin/coupon-templates/{templateId}/publish:
+    post:
+      operationId: publishCouponTemplate
+      summary: OPS发布券模板
+      description: ''
+      tags:
+      - Admin
+      responses:
+        '200':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCouponTemplateResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: templateId
+        in: path
+        required: true
+        schema: *id007
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /v1/admin/reconciliations:
+    post:
+      operationId: importReconciliation
+      summary: FINANCE导入渠道账单
+      description: FINANCE或ADMIN。CSV格式见11-integration-contracts.md，最大10MiB。验证渠道与业务日期，重复相同批次及哈希返回原结果。
+      tags:
+      - Admin
+      responses:
+        '202':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReconciliationBatchResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                file:
+                  type: string
+                  format: binary
+                businessDate:
+                  type: string
+                  format: date
+                billType:
+                  type: string
+                  enum:
+                  - PAYMENT
+                  - REFUND
+                channel:
+                  type: string
+                  enum:
+                  - MOCK
+                versionNo:
+                  type: integer
+                  format: int64
+                  minimum: 1
+                sourceTimezone:
+                  type: string
+                  enum:
+                  - Asia/Shanghai
+                  - UTC
+              required:
+              - file
+              - businessDate
+              - billType
+              - channel
+              - versionNo
+              - sourceTimezone
+  /v1/admin/reconciliation-items:
+    get:
+      operationId: listReconciliationItems
+      summary: FINANCE查询差异
+      description: ''
+      tags:
+      - Admin
+      responses:
+        '200':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReconciliationPageResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - *id001
+      - *id002
+      - name: status
+        in: query
+        schema:
+          type: string
+  /v1/admin/refunds/{refundNo}/retry:
+    post:
+      operationId: retryRefund
+      summary: FINANCE查单与受控重试
+      description: 只对可恢复单查单后按原退款号重试。SUCCESS安全返回已有结果；FAILED_FINAL返回409，不另造退款号。
+      tags:
+      - Admin
+      responses:
+        '202':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationAcceptedResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: refundNo
+        in: path
+        required: true
+        schema: *id003
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+  /v1/admin/outbox/{eventId}/replay:
+    post:
+      operationId: replayOutbox
+      summary: ADMIN重放死信事件
+      description: 仅允许DEAD事件，原事件号和载荷不变，必须保存操作审计。
+      tags:
+      - Admin
+      responses:
+        '202':
+          description: 成功或已受理，按data中的状态继续查询
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationAcceptedResponse'
+        default:
+          description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: eventId
+        in: path
+        required: true
+        schema: *id003
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    CallbackHmac:
+      type: apiKey
+      in: header
+      name: X-Signature
+      description: HMAC-SHA256签名；同时必须携带X-Key-Id X-Timestamp X-Nonce，算法见11-integration-contracts.md
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 64
+      description: 同一用户和路由内唯一，重试沿用；同Key不同body为409
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+      description: 不透明游标
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+  schemas:
+    Error:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId: *id003
+        data:
+          type: object
+          nullable: true
+      required:
+      - code
+      - message
+      - requestId
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 80
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+          format: password
+      required:
+      - username
+      - password
+    Token:
+      type: object
+      additionalProperties: false
+      properties:
+        accessToken:
+          type: string
+        tokenType:
+          type: string
+          enum:
+          - Bearer
+        expiresIn:
+          type: integer
+          format: int64
+          minimum: 0
+        roles:
+          type: array
+          items:
+            type: string
+      required:
+      - accessToken
+      - tokenType
+      - expiresIn
+      - roles
+    Connector:
+      type: object
+      additionalProperties: false
+      properties:
+        connectorId: *id007
+        deviceId:
+          type: string
+        connectorCode:
+          type: string
+        status:
+          type: string
+        available:
+          type: boolean
+      required:
+      - connectorId
+      - deviceId
+      - connectorCode
+      - status
+      - available
+    Station:
+      type: object
+      additionalProperties: false
+      properties:
+        stationId: *id007
+        name:
+          type: string
+        address:
+          type: string
+        timezone:
+          type: string
+        tariffVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        connectors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Connector'
+      required:
+      - stationId
+      - name
+      - timezone
+      - connectors
+    StationPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Station'
+        nextCursor:
+          type: string
+          nullable: true
+      required:
+      - items
+    QuoteRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        connectorId: *id007
+        estimatedEnergyWh:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 1000000
+        useMembership:
+          type: boolean
+          default: false
+        couponId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 数据库64位编号以字符串输出
+          nullable: true
+      required:
+      - connectorId
+      - estimatedEnergyWh
+      - useMembership
+    Amounts:
+      type: object
+      additionalProperties: false
+      properties:
+        totalWh: &id010
+          type: integer
+          format: int64
+          minimum: 0
+          description: 电量单位Wh
+        energyFen: &id008
+          type: integer
+          format: int64
+          minimum: 0
+          description: 金额单位为分，禁止浮点元
+        serviceFen: *id008
+        memberDiscountFen: *id008
+        couponDiscountFen: *id008
+        payableFen: *id008
+      required:
+      - totalWh
+      - energyFen
+      - serviceFen
+      - memberDiscountFen
+      - couponDiscountFen
+      - payableFen
+    Quote:
+      type: object
+      additionalProperties: false
+      properties:
+        estimated:
+          type: boolean
+          enum:
+          - true
+        tariffVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        prepaidFen:
+          type: integer
+          format: int64
+          minimum: 0
+          enum:
+          - 10000
+        amounts:
+          $ref: '#/components/schemas/Amounts'
+        expiresAt: &id009
+          type: string
+          format: date-time
+      required:
+      - estimated
+      - tariffVersion
+      - prepaidFen
+      - amounts
+      - expiresAt
+    CreateOrderRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        connectorId: *id007
+        expectedTariffVersion:
+          type: integer
+          format: int64
+          minimum: 1
+        useMembership:
+          type: boolean
+        couponId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 数据库64位编号以字符串输出
+          nullable: true
+      required:
+      - connectorId
+      - expectedTariffVersion
+      - useMembership
+    Order:
+      type: object
+      additionalProperties: false
+      properties:
+        orderNo: *id003
+        connectorId: *id007
+        status:
+          type: string
+          enum:
+          - WAIT_PAY
+          - CANCELING
+          - START_PENDING
+          - CHARGING
+          - STOP_PENDING
+          - BILLING
+          - REVIEW
+          - EXCEPTION
+          - COMPLETED
+          - CANCELED
+        financialStatus:
+          type: string
+          enum:
+          - OPEN
+          - REFUNDING
+          - CLOSED
+          - DIFF
+          - SHORTFALL
+        prepaidFen:
+          type: integer
+          format: int64
+          minimum: 0
+          enum:
+          - 10000
+        paymentDeadline: *id009
+        createdAt: *id009
+        exceptionCode:
+          type: string
+          nullable: true
+      required:
+      - orderNo
+      - connectorId
+      - status
+      - financialStatus
+      - prepaidFen
+      - createdAt
+    OrderPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+        nextCursor:
+          type: string
+          nullable: true
+      required:
+      - items
+    Payment:
+      type: object
+      additionalProperties: false
+      properties:
+        payNo: *id003
+        orderNo: *id003
+        status:
+          type: string
+          enum:
+          - INIT
+          - PENDING
+          - SUCCESS
+          - CLOSE_PENDING
+          - CLOSED
+          - UNKNOWN
+        amountFen:
+          type: integer
+          format: int64
+          minimum: 0
+          enum:
+          - 10000
+        currency:
+          type: string
+          enum:
+          - CNY
+        checkoutUrl:
+          type: string
+          format: uri
+          nullable: true
+      required:
+      - payNo
+      - orderNo
+      - status
+      - amountFen
+      - currency
+    CommandAccepted:
+      type: object
+      additionalProperties: false
+      properties:
+        orderNo: *id003
+        status:
+          type: string
+        commandId:
+          type: string
+          format: uuid
+          nullable: true
+        message:
+          type: string
+      required:
+      - orderNo
+      - status
+    BillItem:
+      type: object
+      additionalProperties: false
+      properties:
+        segmentNo:
+          type: integer
+          format: int64
+          minimum: 0
+        start: *id009
+        end: *id009
+        deltaWh: *id010
+        energyRateFenPerKwh:
+          type: integer
+          format: int64
+          minimum: 0
+        serviceRateFenPerKwh:
+          type: integer
+          format: int64
+          minimum: 0
+        energyFen: *id008
+        serviceFen: *id008
+      required:
+      - segmentNo
+      - start
+      - end
+      - deltaWh
+      - energyRateFenPerKwh
+      - serviceRateFenPerKwh
+      - energyFen
+      - serviceFen
+    Bill:
+      type: object
+      additionalProperties: false
+      properties:
+        billNo: *id003
+        orderNo: *id003
+        amounts:
+          $ref: '#/components/schemas/Amounts'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BillItem'
+        createdAt: *id009
+      required:
+      - billNo
+      - orderNo
+      - amounts
+      - items
+      - createdAt
+    Refund:
+      type: object
+      additionalProperties: false
+      properties:
+        refundNo: *id003
+        status:
+          type: string
+          enum:
+          - INIT
+          - PROCESSING
+          - SUCCESS
+          - FAILED_FINAL
+          - UNKNOWN
+        amountFen: *id008
+        reason:
+          type: string
+          enum:
+          - FULL_CANCEL
+          - BALANCE
+      required:
+      - refundNo
+      - status
+      - amountFen
+      - reason
+    Funds:
+      type: object
+      additionalProperties: false
+      properties:
+        orderNo: *id003
+        capturedFen: *id008
+        refundReservedFen: *id008
+        refundSuccessFen: *id008
+        netReceivedFen: *id008
+        shortfallFen: *id008
+        financialStatus:
+          type: string
+        refunds:
+          type: array
+          items:
+            $ref: '#/components/schemas/Refund'
+      required:
+      - orderNo
+      - capturedFen
+      - refundReservedFen
+      - refundSuccessFen
+      - netReceivedFen
+      - shortfallFen
+      - financialStatus
+      - refunds
+    Benefits:
+      type: object
+      additionalProperties: false
+      properties:
+        memberActive:
+          type: boolean
+        periodMonth:
+          type: string
+          pattern: ^[0-9]{4}-[0-9]{2}$
+        totalCount:
+          type: integer
+          format: int64
+          minimum: 0
+        reservedCount:
+          type: integer
+          format: int64
+          minimum: 0
+        usedCount:
+          type: integer
+          format: int64
+          minimum: 0
+        discountBasisPoints:
+          type: integer
+          format: int64
+          minimum: 0
+          enum:
+          - 2000
+        maxDiscountFen:
+          type: integer
+          format: int64
+          minimum: 0
+          enum:
+          - 300
+      required:
+      - memberActive
+      - periodMonth
+      - totalCount
+      - reservedCount
+      - usedCount
+    CouponTemplate:
+      type: object
+      additionalProperties: false
+      properties:
+        templateId: *id007
+        name:
+          type: string
+        thresholdFen: *id008
+        discountFen: *id008
+        remainingCount:
+          type: integer
+          format: int64
+          minimum: 0
+        claimUntil: *id009
+        validUntil: *id009
+        scope:
+          type: string
+          enum:
+          - ALL_STATIONS
+      required:
+      - templateId
+      - name
+      - thresholdFen
+      - discountFen
+      - remainingCount
+      - validUntil
+    CouponTemplatePage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CouponTemplate'
+        nextCursor:
+          type: string
+          nullable: true
+      required:
+      - items
+    UserCoupon:
+      type: object
+      additionalProperties: false
+      properties:
+        couponId: *id007
+        templateId: *id007
+        status:
+          type: string
+          enum:
+          - AVAILABLE
+          - LOCKED
+          - USED
+          - EXPIRED
+        lockedOrderNo:
+          type: string
+          format: uuid
+          nullable: true
+        validUntil: *id009
+        thresholdFen: *id008
+        discountFen: *id008
+      required:
+      - couponId
+      - templateId
+      - status
+      - validUntil
+      - thresholdFen
+      - discountFen
+    CouponPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserCoupon'
+        nextCursor:
+          type: string
+          nullable: true
+      required:
+      - items
+    TariffSlot:
+      type: object
+      additionalProperties: false
+      properties:
+        startMinute:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1439
+        endMinute:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 1440
+        energyRateFenPerKwh:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000
+        serviceRateFenPerKwh:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000
+      required:
+      - startMinute
+      - endMinute
+      - energyRateFenPerKwh
+      - serviceRateFenPerKwh
+    CreateTariffRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        stationId: *id007
+        versionNo:
+          type: integer
+          format: int64
+          minimum: 1
+        slots:
+          type: array
+          minItems: 1
+          maxItems: 48
+          items:
+            $ref: '#/components/schemas/TariffSlot'
+      required:
+      - stationId
+      - versionNo
+      - slots
+    Tariff:
+      type: object
+      additionalProperties: false
+      properties:
+        tariffId: *id007
+        stationId: *id007
+        versionNo:
+          type: integer
+          format: int64
+          minimum: 0
+        status:
+          type: string
+          enum:
+          - DRAFT
+          - PUBLISHED
+        ruleHash:
+          type: string
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/TariffSlot'
+      required:
+      - tariffId
+      - stationId
+      - versionNo
+      - status
+      - slots
+    CreateCouponTemplateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        claimFrom: *id009
+        claimUntil: *id009
+        useValidFrom: *id009
+        useValidUntil: *id009
+        thresholdFen:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000
+        discountFen:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 10000
+        totalCount:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000
+        scope:
+          type: string
+          enum:
+          - ALL_STATIONS
+      required:
+      - name
+      - claimFrom
+      - claimUntil
+      - useValidFrom
+      - useValidUntil
+      - thresholdFen
+      - discountFen
+      - totalCount
+      - scope
+    AdminCouponTemplate:
+      type: object
+      additionalProperties: false
+      properties:
+        templateId: *id007
+        status:
+          type: string
+          enum:
+          - DRAFT
+          - PUBLISHED
+        name:
+          type: string
+      required:
+      - templateId
+      - status
+      - name
+    ReasonRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          minLength: 5
+          maxLength: 255
+      required:
+      - reason
+    OperationAccepted:
+      type: object
+      additionalProperties: false
+      properties:
+        resourceNo:
+          type: string
+        status:
+          type: string
+      required:
+      - resourceNo
+      - status
+    ReconciliationBatch:
+      type: object
+      additionalProperties: false
+      properties:
+        batchId: *id007
+        status:
+          type: string
+        businessDate:
+          type: string
+          format: date
+        billType:
+          type: string
+          enum:
+          - PAYMENT
+          - REFUND
+        fileHash:
+          type: string
+      required:
+      - batchId
+      - status
+      - businessDate
+      - billType
+      - fileHash
+    ReconciliationItem:
+      type: object
+      additionalProperties: false
+      properties:
+        itemId: *id007
+        batchId: *id007
+        orderNo:
+          type: string
+          format: uuid
+          nullable: true
+        providerBizNo:
+          type: string
+        diffType:
+          type: string
+        status:
+          type: string
+        localAmountFen:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 金额单位为分，禁止浮点元
+          nullable: true
+        channelAmountFen:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 金额单位为分，禁止浮点元
+          nullable: true
+      required:
+      - itemId
+      - batchId
+      - providerBizNo
+      - diffType
+      - status
+    ReconciliationPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReconciliationItem'
+        nextCursor:
+          type: string
+          nullable: true
+      required:
+      - items
+    DeviceEvent:
+      type: object
+      additionalProperties: false
+      properties:
+        eventId: *id003
+        deviceId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        connectorId: *id007
+        sessionNo:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+          enum:
+          - STARTED
+          - METER
+          - STOPPED
+          - STATUS
+        seqNo:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 电量单位Wh
+        meterWh:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 电量单位Wh
+        finalSeq:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 电量单位Wh
+        occurredAt: *id009
+        sampleKind:
+          type: string
+          enum:
+          - START
+          - NORMAL
+          - TARIFF_BOUNDARY
+          - DAY_BOUNDARY
+          - END
+        deviceStatus:
+          type: string
+          enum:
+          - IDLE
+          - CHARGING
+          - OFFLINE
+          - FAULT
+      required:
+      - eventId
+      - deviceId
+      - connectorId
+      - eventType
+      - occurredAt
+    PaymentNotification:
+      type: object
+      additionalProperties: false
+      properties:
+        channelEventId:
+          type: string
+          minLength: 1
+          maxLength: 80
+        type:
+          type: string
+          enum:
+          - PAYMENT_SUCCESS
+          - PAYMENT_CLOSED
+          - REFUND_SUCCESS
+          - REFUND_FAILED
+        payNo: *id003
+        refundNo:
+          type: string
+          format: uuid
+          nullable: true
+        providerBizNo:
+          type: string
+          minLength: 1
+          maxLength: 64
+        amountFen: *id008
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        occurredAt: *id009
+      required:
+      - channelEventId
+      - type
+      - payNo
+      - providerBizNo
+      - amountFen
+      - currency
+      - occurredAt
+    Receipt:
+      type: object
+      additionalProperties: false
+      properties:
+        processStatus:
+          type: string
+          enum:
+          - RECEIVED
+          - APPLIED
+          - QUARANTINED
+        eventId:
+          type: string
+      required:
+      - processStatus
+      - eventId
+    TokenResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Token'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    ConnectorResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Connector'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    StationResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Station'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    StationPageResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/StationPage'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    AmountsResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Amounts'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    QuoteResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Quote'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    OrderResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Order'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    OrderPageResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/OrderPage'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    PaymentResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Payment'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    CommandAcceptedResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/CommandAccepted'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    BillItemResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/BillItem'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    BillResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Bill'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    RefundResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Refund'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    FundsResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Funds'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    BenefitsResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Benefits'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    CouponTemplateResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/CouponTemplate'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    CouponTemplatePageResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/CouponTemplatePage'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    UserCouponResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/UserCoupon'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    CouponPageResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/CouponPage'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    TariffSlotResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/TariffSlot'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    TariffResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Tariff'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    AdminCouponTemplateResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/AdminCouponTemplate'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    OperationAcceptedResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/OperationAccepted'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    ReconciliationBatchResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/ReconciliationBatch'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    ReconciliationItemResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/ReconciliationItem'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    ReconciliationPageResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/ReconciliationPage'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    DeviceEventResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/DeviceEvent'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    PaymentNotificationResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/PaymentNotification'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
+    ReceiptResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/Receipt'
+        requestId: *id003
+      required:
+      - code
+      - data
+      - requestId
