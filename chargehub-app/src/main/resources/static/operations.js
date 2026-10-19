@@ -1,5 +1,5 @@
 'use strict';
-const $=id=>document.getElementById(id),esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),amount=value=>'¥'+(Number(value||0)/100).toFixed(2),when=value=>value?new Date(value).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false}):'—';
+const $=id=>document.getElementById(id),esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])),amount=value=>value==null||value===''?'—':'¥'+(Number(value)/100).toFixed(2),when=value=>value?new Date(value).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false}):'—';
 const staff={token:null,roles:[],orderCursor:null,orders:[],meter:null,financeCursor:null,finance:[],outboxCursor:null,outbox:[]};
 let messageTimer;
 function notify(text,error=false){$('message').textContent=text;$('message').className='status'+(error?' error':'');clearTimeout(messageTimer);messageTimer=setTimeout(()=>$('message').classList.add('hidden'),8000)}

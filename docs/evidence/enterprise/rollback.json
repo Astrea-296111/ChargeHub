@@ -1,0 +1,170 @@
+{
+  "status": "PASS",
+  "startedAt": "2026-10-19T11:13:40.727949+00:00",
+  "project": "chargehub-rollback-80ed67bfa766",
+  "candidate": {
+    "id": "sha256:52bdaff20c1a57f6c0e518c5592779d64a31b202cf80d8a9ff36932dddc082a2",
+    "revision": "a212a8b4ffb91444c1170478995786c1f2780d02"
+  },
+  "previous": {
+    "id": "sha256:dfcb0aa7130e62892b6e0ef1599d8e45f6a8754c452422b22737ab958a6c7cc7",
+    "revision": null
+  },
+  "simulator": {
+    "id": "sha256:b6b5344535e71559c9aeeaa19e1ec7e82042f8edb81d44df8d849ebd7770dd7a",
+    "revision": null
+  },
+  "checks": [
+    {
+      "check": "Old image initializes genuinely empty MySQL and creates/cancels an order",
+      "result": "PASS"
+    },
+    {
+      "check": "Candidate upgrades old schema and completes independently signed payment/device/refund facts",
+      "result": "PASS",
+      "flywayVersions": [
+        "1\t1",
+        "2\t1",
+        "3\t1",
+        "4\t1",
+        "5\t1",
+        "6\t1",
+        "7\t1",
+        "8\t1"
+      ]
+    },
+    {
+      "check": "Previous image starts against upgraded schema and reads retained real transaction",
+      "result": "PASS",
+      "verifiedTableCounts": {
+        "device_event": {
+          "rows": 6,
+          "sha256": "23ab99b63fbbede6502ecef34ce1584ceb7a12a96d57cb27b1c5724f5e422d0d"
+        },
+        "device_event_conflict": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "payment_callback": {
+          "rows": 2,
+          "sha256": "ea6fd32b907030c042d9ec05526627dbfe3f656d758f80f0b5260f0d2b06ad64"
+        },
+        "cash_entry": {
+          "rows": 2,
+          "sha256": "8ee184c9ea91ccdcf23edb9f6754ac590da8351b73f48785c07403a335f01962"
+        },
+        "charge_bill": {
+          "rows": 1,
+          "sha256": "b9d66b19861705ce3ccca388c999e187b5dcb84ad6e24695a911af5abf855c8e"
+        },
+        "charge_bill_item": {
+          "rows": 1,
+          "sha256": "5795ff559507e2410629d623bd051988ec32d56ec72fa8fd2c0a86898971fcca"
+        },
+        "payment_order": {
+          "rows": 1,
+          "sha256": "4f2c6bb63fae8f759f4d42b82f095f9be0933677ca3e2847bc93f46f7913d971"
+        },
+        "refund_order": {
+          "rows": 1,
+          "sha256": "48858a7b557456afb4f1591a17131f6bbac752b6aae1486cfa3bbcdde59a114c"
+        },
+        "charge_session": {
+          "rows": 1,
+          "sha256": "b99392ff8f5f203cb563633c4520fe810e8326e5bbba35bcd08799a6bf5843c4"
+        },
+        "meter_sample": {
+          "rows": 6,
+          "sha256": "df8ba0f86f776d52aa5296b167fc4a810aa04978412a215381590045cf1f9342"
+        },
+        "benefit_reservation": {
+          "rows": 2,
+          "sha256": "308e42e5ce936020693f3405f39d880a67b8c74450bd1ba80cce8767f203c260"
+        }
+      }
+    },
+    {
+      "check": "MySQL restored to a new database and both SQLite snapshots restored to new volumes; candidate reads retained facts",
+      "result": "PASS",
+      "restoredDatabase": "chargehub_restore_80ed67bfa766",
+      "invariantViolations": 0
+    }
+  ],
+  "scope": "Isolated MySQL migration/application rollback and independent SQLite backup/restore; no production data, external MQ journal, or demo volumes are touched.",
+  "mysqlBackupSha256": "19517d46f96c287ca4379e19bd5bc531024568b99b46d7d744061cad77ff3ff3",
+  "sqliteBackups": {
+    "gateway": {
+      "status": "PASS",
+      "sourceSha256": "352a9bb23c329c5a9bf235baf56917358b5b64b03f1a11d261fadae9c3cdb721",
+      "sourceHashScope": "main file only; logical facts include committed WAL through SQLite backup API",
+      "backupSha256": "c06672a5b88b58badcccd883381c1d3d7a2dce62093ff56dc60758222c1e1d75",
+      "tables": {
+        "nonces": {
+          "rows": 3,
+          "sha256": "b879fec92ab1aef7c7fb04069d407f29ef1751214d1f67d5766e1a8ea645d140"
+        },
+        "notifications": {
+          "rows": 2,
+          "sha256": "751f3c73c600d75d4f38f5aab2028e33ae63b701e6b3af172b3e26ffb2724ed6"
+        },
+        "payments": {
+          "rows": 1,
+          "sha256": "90176eb7a472579fec1c227e5ddea5267bc831f906cea2cccd0b9564aa32ba46"
+        },
+        "refunds": {
+          "rows": 1,
+          "sha256": "b5957a2dd33dadeb35b79f20a9fd7664218a91007c7ce9d0e78e98a607247049"
+        },
+        "settings": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    },
+    "device": {
+      "status": "PASS",
+      "sourceSha256": "352a9bb23c329c5a9bf235baf56917358b5b64b03f1a11d261fadae9c3cdb721",
+      "sourceHashScope": "main file only; logical facts include committed WAL through SQLite backup API",
+      "backupSha256": "9249b83497d87995f02d4fe677e37fa3667870567b5875e52bef8e6097002f47",
+      "tables": {
+        "commands": {
+          "rows": 1,
+          "sha256": "aca046a9127382fd61188c74bf6c21d938d7b17a4408e29fee85e29b389298b0"
+        },
+        "events": {
+          "rows": 6,
+          "sha256": "fab39697cb5632253487651df9e22c6b861390b2a22c4ea2ca51482aaf2da9c4"
+        },
+        "meter_truth": {
+          "rows": 6,
+          "sha256": "b27ca5963cf60370c7daaabe7b9b570f51060a2a3c62734314ae8569d2bb3517"
+        },
+        "nonces": {
+          "rows": 2,
+          "sha256": "7eccf11909b5ffda120b4cfa029c5b961e36594fe676c1faf22fdd71fe177043"
+        },
+        "notifications": {
+          "rows": 6,
+          "sha256": "2bc5c4b516d95df20ff19fa88a831983d375b01fa635dba796797a65e4ff2e67"
+        },
+        "sessions": {
+          "rows": 1,
+          "sha256": "cc69741fb85e79aa251a382e8258b2a6f4a191d06fe0d7fe6de93b48aaadf95d"
+        },
+        "settings": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "start_rejections": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "supplementary_events": {
+          "rows": 0,
+          "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        }
+      }
+    }
+  },
+  "endedAt": "2026-10-19T11:15:41.104565+00:00"
+}

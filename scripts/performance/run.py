@@ -7,6 +7,7 @@ import json
 import os
 import re
 import secrets
+import shutil
 import subprocess
 import sys
 import time
@@ -44,7 +45,10 @@ def seed(compose,history,directory):
         rows.append(f"INSERT IGNORE INTO iam_user_role(user_id,role_code) SELECT id,'CUSTOMER' FROM iam_user WHERE login_name='perf{i:04d}';")
         rows.append(f"INSERT IGNORE INTO connector(id,station_id,device_id,connector_code) SELECT {10000+i},id,'perf-device-01','PERF-{i:04d}' FROM station ORDER BY id LIMIT 1;")
     sql(compose,'\n'.join(rows))
-    if history:
+    existing_history=int(sql(compose,"SELECT COUNT(*) FROM charge_order WHERE order_no LIKE 'f00d0000-%';").strip())
+    if existing_history and existing_history!=history:
+        raise RuntimeError('Existing isolated run has a different history scale; create a new run instead of replacing data')
+    if history and existing_history!=history:
         seed_sql=f'''SET @station=(SELECT id FROM station ORDER BY id LIMIT 1);
 SET @tariff=(SELECT active_tariff_id FROM station WHERE id=@station);
 SET @snapshot=(SELECT JSON_OBJECT('tariffId',CAST(t.id AS CHAR),'stationId',CAST(s.id AS CHAR),'tariffVersion',t.version_no,'timezone',s.timezone,'ruleHash',t.rule_hash,'slots',(SELECT JSON_ARRAYAGG(JSON_OBJECT('startMinute',start_minute,'endMinute',end_minute,'energyRateFenPerKwh',energy_rate_fen_per_kwh,'serviceRateFenPerKwh',service_rate_fen_per_kwh)) FROM tariff_slot WHERE tariff_id=t.id)) FROM station s JOIN tariff_plan t ON t.id=s.active_tariff_id WHERE s.id=@station);
@@ -71,7 +75,7 @@ SELECT COUNT(*) FROM charge_order WHERE order_no LIKE 'f00d0000-%';'''
         (directory/(name+'.sql')).write_text(query+';\n')
         (directory/(name+'.explain.json.txt')).write_text(sql(compose,'EXPLAIN FORMAT=JSON '+query+';'))
         (directory/(name+'.analyze.txt')).write_text(sql(compose,'EXPLAIN ANALYZE '+query+';'))
-    (directory/'seed-summary.json').write_text(json.dumps({'users':100,'connectors':100,'historicalOrders':history,'elapsedSeconds':time.monotonic()-start,'synthetic':True,'historicalStatus':'CANCELED/CLOSED; no invented cash or charging sessions'},indent=2)+'\n')
+    (directory/'seed-summary.json').write_text(json.dumps({'users':100,'connectors':100,'historicalOrders':history,'reusedHistoricalRows':existing_history==history and history>0,'elapsedSeconds':time.monotonic()-start,'synthetic':True,'historicalStatus':'CANCELED/CLOSED; no invented cash or charging sessions'},indent=2)+'\n')
 
 
 def snapshot(compose,directory,suffix):
@@ -113,12 +117,23 @@ def main():
     else:
         values=dict(line.split('=',1) for line in envfile.read_text().splitlines() if '=' in line)
         if values.get('CHARGEHUB_CANDIDATE_IMAGE')!=candidate['imageId']: raise SystemExit('Existing run belongs to a different immutable candidate')
+        previous_report=directory/'run.json'
+        if previous_report.exists():
+            previous=json.loads(previous_report.read_text())
+            if previous.get('result')=='RUNNING': raise SystemExit('Existing run still reports RUNNING; do not start concurrent load against it')
+            archive=directory/'attempts'/((previous.get('phase') or 'unknown')+'-'+uuid.uuid4().hex[:10])
+            archive.mkdir(parents=True)
+            # Preserve smoke and every failure before reusing the same topology.
+            # Credentials remain only in the private original env file.
+            for entry in list(directory.iterdir()):
+                if entry.name not in ('env','attempts'):
+                    shutil.move(str(entry),str(archive/entry.name))
     compose=['docker','compose','-p','chargehub-perf-'+run_id,'--project-directory',str(ROOT),'--env-file',str(envfile),'-f',str(COMPOSE),'-f',str(ROOT/'compose-mq.yaml'),'-f',str(ROOT/'scripts/performance/compose-mq-limits.yaml')]
     began=datetime.now(timezone.utc).isoformat()
     machine={'hostLogicalCpuCount':os.cpu_count(),'processCpuAffinity':sorted(os.sched_getaffinity(0)),
              'processCgroupCpuMax':Path('/sys/fs/cgroup/cpu.max').read_text().strip(),
              'processCgroupMemoryMax':Path('/sys/fs/cgroup/memory.max').read_text().strip(),
-             'hostLoadAverage':os.getloadavg(),
+             'hostLoadAverage':os.getloadavg(),'workspaceFreeBytesBefore':shutil.disk_usage(ROOT).free,
              'docker':json.loads(command(['docker','info','--format','{{json .}}']).stdout)}
     # Keep useful resources/version only, avoiding daemon labels/network credentials.
     machine['docker']={k:machine['docker'].get(k) for k in ['NCPU','MemTotal','ServerVersion','Architecture','OperatingSystem','KernelVersion']}
@@ -126,6 +141,11 @@ def main():
     report={'runId':run_id,'beganAt':began,'candidate':candidate,'simulator':simulator,'sha':args.sha,'machine':machine,
             'phase':args.phase,'historyRequested':args.history,'plannedApplicationLimit':'4 vCPU / 8 GiB with RocketMQ overlay; load generator additional0.75 vCPU /512MiB',
             'result':'RUNNING','notes':['No demo database, demo volumes, host ports, or public targets are used.','Resource limits and measured host capacity are separate facts.']}
+    report['harnessGitHead']=command(['git','-C',str(ROOT),'rev-parse','HEAD']).stdout.strip()
+    report['harnessFileSha256']={name:hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in [
+        'scripts/performance/run.py','scripts/performance/load.py','scripts/performance/compose.yaml',
+        'scripts/performance/compose-mq-limits.yaml','compose-mq.yaml',
+        'deploy/rocketmq/broker.conf','deploy/rocketmq/proxy.json']}
     reportfile=directory/'run.json';reportfile.write_text(json.dumps(report,indent=2)+'\n')
     try:
         started=command(compose+['up','-d','--wait','--wait-timeout','240'])
@@ -150,12 +170,17 @@ def main():
     except Exception as exception:
         report['result']='FAIL';report['failure']=type(exception).__name__+': '+str(exception)
         if isinstance(exception,subprocess.CalledProcessError):
-            (directory/'failure-private.log').write_text((exception.stdout or '')+(exception.stderr or ''))
+            try:
+                (directory/'failure-private.log').write_text((exception.stdout or '')+(exception.stderr or ''))
+            except OSError as evidence_error:
+                print('Private failure log could not be written: '+type(evidence_error).__name__,file=sys.stderr)
         # Container logs are deliberately not copied: they can include private data.
     finally:
         report['endedAt']=datetime.now(timezone.utc).isoformat()
-        reportfile.write_text(json.dumps(report,indent=2)+'\n')
-        if args.down: command(compose+['down'],check=False)
+        try:
+            reportfile.write_text(json.dumps(report,indent=2)+'\n')
+        finally:
+            if args.down: command(compose+['down'],check=False)
     print(json.dumps({'runId':run_id,'result':report['result'],'evidence':str(directory),'failure':report.get('failure')},indent=2))
     raise SystemExit(0 if report['result']=='PASS' else 1)
 

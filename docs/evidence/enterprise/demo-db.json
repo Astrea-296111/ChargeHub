@@ -1,0 +1,36 @@
+{
+  "simulated": true,
+  "executedAt": "2026-10-19T11:07:09.404406+00:00",
+  "reusedExisting": true,
+  "orderNo": "92db06fd-25fb-4ed1-bac6-87cab7b32fb4",
+  "payNo": "55e696e1-9537-4f7a-9cf0-c9f9e3a20b1a",
+  "sessionNo": "f0e5ea84-fc01-468b-b277-7bf36408b4c8",
+  "amounts": {
+    "totalWh": 20000,
+    "energyFen": 1600,
+    "serviceFen": 1000,
+    "memberDiscountFen": 200,
+    "couponDiscountFen": 300,
+    "payableFen": 2100
+  },
+  "funds": {
+    "orderNo": "92db06fd-25fb-4ed1-bac6-87cab7b32fb4",
+    "capturedFen": 10000,
+    "refundReservedFen": 0,
+    "refundSuccessFen": 7900,
+    "netReceivedFen": 2100,
+    "shortfallFen": 0,
+    "financialStatus": "CLOSED",
+    "refunds": [
+      {
+        "amountFen": 7900,
+        "refundNo": "7d94751b-1151-453a-b9f5-676ed95e61e9",
+        "status": "SUCCESS",
+        "reason": "BALANCE"
+      }
+    ]
+  },
+  "status": "PASS",
+  "applicationCandidate": "302507165a4496ded25ac6ff0505a93869bec47c",
+  "scope": "Real local Docker topology, MySQL8.4, independent simulated payment/device; business Java classes also unchanged in a212a8b."
+}

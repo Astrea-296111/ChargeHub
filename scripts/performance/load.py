@@ -27,7 +27,7 @@ if os.environ.get('CHARGEHUB_PERF_ISOLATED') != 'yes' or not re.fullmatch(r'char
 BASES = {'api': 'http://api:8080', 'gateway': 'http://gateway:18081', 'device': 'http://device:18082'}
 PASSWORD, CONTROL = os.environ['PERF_PASSWORD'], os.environ['PERF_CONTROL_KEY']
 LOCK = threading.Lock()
-ROWS, USERS, ACTIVE = [], [], {}
+ROWS, USERS, ACTIVE, SESSION_RESULTS = [], [], {}, []
 OUT = None
 
 
@@ -212,6 +212,19 @@ def sessions(args):
         funds=poll(session['user'],'/v1/charge-orders/'+session['orderNo']+'/funds',lambda d:d['financialStatus']=='CLOSED',timeout=180)
         if funds['capturedFen']!=10000 or funds['netReceivedFen']+funds['refundSuccessFen']!=10000:
             raise RuntimeError('Session monetary invariant failed')
+        row,bill=call(session['user'],'GET','/v1/charge-orders/'+session['orderNo']+'/bill',phase='cleanup')
+        require(row,bill,'formal session bill')
+        amounts=bill['amounts']
+        if amounts['totalWh']!=ticks*10 or amounts['payableFen']!=funds['netReceivedFen']:
+            raise RuntimeError('Complete sampled energy or formal bill/cash equality was not preserved')
+        row,order=call(session['user'],'GET','/v1/charge-orders/'+session['orderNo'],phase='cleanup')
+        require(row,order,'final session state')
+        if order['status']!='COMPLETED':raise RuntimeError('A sampled device session did not complete')
+        with LOCK:
+            SESSION_RESULTS.append({'orderNo':session['orderNo'],'sessionNo':session['sessionNo'],
+                'totalWh':amounts['totalWh'],'payableFen':amounts['payableFen'],
+                'capturedFen':funds['capturedFen'],'refundSuccessFen':funds['refundSuccessFen'],
+                'financialStatus':funds['financialStatus'],'status':order['status']})
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
         list(pool.map(stop,running))
     return elapsed,total
@@ -273,7 +286,10 @@ def main():
             'classifications':dict(counts),'completedRequestsPerSecond':len(sent)/elapsed if elapsed else 0,
             'latencyMs':{'P50':percentile(latencies,.5),'P95':percentile(latencies,.95),'P99':percentile(latencies,.99)},
             'queueMsP95':percentile([r.get('queueMs',0) for r in sent],.95),'totalRawRows':len(ROWS),
-            'perOperation':per_operation,'slo':slo,'rawRequests':'requests.jsonl','failure':failure,'scope':'Measured synthetic isolated load. This report is not a production throughput claim.'}
+            'allPhasesClassifications':dict(Counter(r['classification'] for r in ROWS)),
+            'byPhase':{phase:dict(Counter(r['classification'] for r in ROWS if r['phase']==phase)) for phase in sorted({r['phase'] for r in ROWS})},
+            'perOperation':per_operation,'slo':slo,'completedSessionCount':len(SESSION_RESULTS),
+            'sessionResults':SESSION_RESULTS,'rawRequests':'requests.jsonl','failure':failure,'scope':'Measured synthetic isolated load. This report is not a production throughput claim.'}
     if slo['result']=='FAIL': report['status']='FAIL'
     if counts['timeout'] or counts['transport_error'] or counts['server_error'] or counts['authentication_failure'] or counts['invalid_response'] or counts['client_unsent']:
         report['status']='FAIL'

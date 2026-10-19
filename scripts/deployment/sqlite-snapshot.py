@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 
@@ -30,14 +31,20 @@ def main():
     digest=hashlib.sha256(args.source.read_bytes()).hexdigest()
     if args.expected_sha256 and digest!=args.expected_sha256: raise SystemExit('Backup checksum mismatch')
     args.destination.parent.mkdir(parents=True,exist_ok=True)
-    with sqlite3.connect(args.source.as_uri()+'?mode=ro',uri=True) as source:
+    # sqlite3.Connection's context manager commits but does not close. Close explicitly
+    # before hashing and make the backup a standalone file, independent of WAL/SHM sidecars.
+    with closing(sqlite3.connect(args.source.as_uri()+'?mode=ro',uri=True)) as source:
         before=facts(source)
-        with sqlite3.connect(args.destination) as target:
+        with closing(sqlite3.connect(args.destination)) as target:
             source.backup(target)
+            target.commit()
+            mode=target.execute('PRAGMA journal_mode=DELETE').fetchone()[0]
+            if mode.lower()!='delete': raise RuntimeError('Backup must be a standalone non-WAL file')
+            target.commit()
             after=facts(target)
     if before!=after: raise SystemExit('SQLite restored logical facts differ')
     args.destination.chmod(0o600)
-    print(json.dumps({'status':'PASS','sourceSha256':digest,'backupSha256':hashlib.sha256(args.destination.read_bytes()).hexdigest(),'tables':after},indent=2))
+    print(json.dumps({'status':'PASS','sourceSha256':digest,'sourceHashScope':'main file only; logical facts include committed WAL through SQLite backup API','backupSha256':hashlib.sha256(args.destination.read_bytes()).hexdigest(),'tables':after},indent=2))
 
 
 if __name__=='__main__': main()

@@ -1,0 +1,125 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS",
+  "candidateGitSha": "302507165a4496ded25ac6ff0505a93869bec47c",
+  "scope": "Independent persistent payment/device simulator unit and fault-contract tests; not a Compose process-crash or genuine payment-provider test.",
+  "summary": {
+    "tests": 21,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "command": "python3 -m unittest discover -s simulators -p 'test_*.py' -v",
+  "sourceReportPath": ".local/enterprise-python-tests.log",
+  "sourceReportSha256": "04a0d72ff433b9933ac905320b9b96bf529ca6330e3fc59ea8821ed816c99064",
+  "sourceFilesFingerprintSha256": "52cd79ce537baee49a717cb9bba6dbb9bdc573c521f51f46f3af4cf7f1d5195a",
+  "sourceWorkingTreeMatchesCandidate": true,
+  "testCases": [
+    {
+      "name": "test_autonomous_stop_and_advance_race_have_one_contiguous_meter_chain",
+      "qualifiedName": "test_device_acceptance.DeviceAcceptanceTest.test_autonomous_stop_and_advance_race_have_one_contiguous_meter_chain",
+      "status": "PASS"
+    },
+    {
+      "name": "test_expired_start_is_rejected_at_exclusive_deadline",
+      "qualifiedName": "test_device_acceptance.DeviceAcceptanceTest.test_expired_start_is_rejected_at_exclusive_deadline",
+      "status": "PASS"
+    },
+    {
+      "name": "test_explicit_start_rejection_is_durable_and_stable_after_fault_disabled",
+      "qualifiedName": "test_device_acceptance.DeviceAcceptanceTest.test_explicit_start_rejection_is_durable_and_stable_after_fault_disabled",
+      "status": "PASS"
+    },
+    {
+      "name": "test_fault_configuration_rejects_ambiguous_types_and_invalid_ranges",
+      "qualifiedName": "test_device_acceptance.DeviceAcceptanceTest.test_fault_configuration_rejects_ambiguous_types_and_invalid_ranges",
+      "status": "PASS"
+    },
+    {
+      "name": "test_lost_stop_ack_and_duplicates_preserve_one_real_stop_and_no_invented_energy",
+      "qualifiedName": "test_device_acceptance.DeviceAcceptanceTest.test_lost_stop_ack_and_duplicates_preserve_one_real_stop_and_no_invented_energy",
+      "status": "PASS"
+    },
+    {
+      "name": "test_meter_rollback_correction_adds_fact_without_overwriting_bad_original",
+      "qualifiedName": "test_device_acceptance.DeviceAcceptanceTest.test_meter_rollback_correction_adds_fact_without_overwriting_bad_original",
+      "status": "PASS"
+    },
+    {
+      "name": "test_ordinary_advance_ending_exactly_on_boundary_keeps_required_boundary_fact",
+      "qualifiedName": "test_device_acceptance.DeviceAcceptanceTest.test_ordinary_advance_ending_exactly_on_boundary_keeps_required_boundary_fact",
+      "status": "PASS"
+    },
+    {
+      "name": "test_range_replay_and_drop_faults_preserve_all_original_evidence",
+      "qualifiedName": "test_device_acceptance.DeviceAcceptanceTest.test_range_replay_and_drop_faults_preserve_all_original_evidence",
+      "status": "PASS"
+    },
+    {
+      "name": "test_unknown_query_never_destroys_an_actual_running_session",
+      "qualifiedName": "test_device_acceptance.DeviceAcceptanceTest.test_unknown_query_never_destroys_an_actual_running_session",
+      "status": "PASS"
+    },
+    {
+      "name": "test_unknown_session_is_not_certified_until_deadline_and_fence_blocks_late_start",
+      "qualifiedName": "test_device_acceptance.DeviceAcceptanceTest.test_unknown_session_is_not_certified_until_deadline_and_fence_blocks_late_start",
+      "status": "PASS"
+    },
+    {
+      "name": "test_bad_notification_does_not_corrupt_channel_payment_or_export",
+      "qualifiedName": "test_payment_faults.PaymentFaultTest.test_bad_notification_does_not_corrupt_channel_payment_or_export",
+      "status": "PASS"
+    },
+    {
+      "name": "test_final_rejection_cannot_be_retried_under_same_or_new_attempt",
+      "qualifiedName": "test_payment_faults.PaymentFaultTest.test_final_rejection_cannot_be_retried_under_same_or_new_attempt",
+      "status": "PASS"
+    },
+    {
+      "name": "test_lost_refund_response_and_notification_still_query_same_success",
+      "qualifiedName": "test_payment_faults.PaymentFaultTest.test_lost_refund_response_and_notification_still_query_same_success",
+      "status": "PASS"
+    },
+    {
+      "name": "test_retryable_failure_uses_original_number_and_one_channel_cash_out",
+      "qualifiedName": "test_payment_faults.PaymentFaultTest.test_retryable_failure_uses_original_number_and_one_channel_cash_out",
+      "status": "PASS"
+    },
+    {
+      "name": "test_boundary_samples_and_prepaid_loss_limit",
+      "qualifiedName": "test_simulators.IndependentFactsTest.test_boundary_samples_and_prepaid_loss_limit",
+      "status": "PASS"
+    },
+    {
+      "name": "test_capture_close_race_has_single_channel_winner",
+      "qualifiedName": "test_simulators.IndependentFactsTest.test_capture_close_race_has_single_channel_winner",
+      "status": "PASS"
+    },
+    {
+      "name": "test_conflicting_business_parameters_and_durable_restart",
+      "qualifiedName": "test_simulators.IndependentFactsTest.test_conflicting_business_parameters_and_durable_restart",
+      "status": "PASS"
+    },
+    {
+      "name": "test_definitive_refund_rejection_is_stable_failed_fact",
+      "qualifiedName": "test_simulators.IndependentFactsTest.test_definitive_refund_rejection_is_stable_failed_fact",
+      "status": "PASS"
+    },
+    {
+      "name": "test_demo_device_facts_stable_session_and_query_latest",
+      "qualifiedName": "test_simulators.IndependentFactsTest.test_demo_device_facts_stable_session_and_query_latest",
+      "status": "PASS"
+    },
+    {
+      "name": "test_hmac_key_ownership_tampering_and_nonce_replay",
+      "qualifiedName": "test_simulators.IndependentFactsTest.test_hmac_key_ownership_tampering_and_nonce_replay",
+      "status": "PASS"
+    },
+    {
+      "name": "test_idempotent_channel_refund_and_lost_notification_keep_facts",
+      "qualifiedName": "test_simulators.IndependentFactsTest.test_idempotent_channel_refund_and_lost_notification_keep_facts",
+      "status": "PASS"
+    }
+  ],
+  "privatePropertiesOrEnvironmentCopied": false
+}

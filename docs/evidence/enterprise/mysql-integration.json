@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS",
+  "candidateGitSha": "302507165a4496ded25ac6ff0505a93869bec47c",
+  "completedAtUtc": "2026-10-19T11:03:49Z",
+  "sourceReportPath": ".local/reports/mysql-integration.json",
+  "sourceReportSha256": "4cdbbbde2ed095037983a267fe669def14436b90c89a416c5206b241048fa6a6",
+  "databases": {
+    "benefit": "chargehub_benefit_368830dc14_test",
+    "reconcile": "chargehub_reconcile_ebc5573162_test",
+    "workflow": "chargehub_workflow_376ce93a86_test",
+    "identity": "chargehub_identity_b742e6ab1b_test",
+    "catalog": "chargehub_catalog_5821df1f44_test",
+    "meter": "chargehub_meter_bbb5d55ede_test",
+    "finance": "chargehub_finance_bd6d965180_test",
+    "http": "chargehub_http_736a7b223c_test",
+    "messaging": "chargehub_messaging_77a7a9a8ab_test"
+  },
+  "exitCode": 0,
+  "selectedTests": null,
+  "elapsedSeconds": 62.022,
+  "dedicatedRedisRemoved": true,
+  "services": {
+    "mysql": {
+      "versionObserved": "8.4",
+      "dedicatedDatabases": 9,
+      "engine": "InnoDB",
+      "sessionTimezone": "+00:00",
+      "flywayMigrationsValidated": 8
+    },
+    "redis": {
+      "dedicatedTestContainer": true,
+      "image": "redis:7.4-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499",
+      "catalogIntegrationPassed": true,
+      "clientDisconnectionFallbackPassed": true,
+      "serverOutageGateCertified": false
+    }
+  },
+  "javaTestEvidence": "docs/evidence/enterprise/java-tests.json",
+  "notCertifiedByThisRun": [
+    "RocketMQ process-crash and DLQ fault gates",
+    "Redis service-side stop/clear/restart fault gate",
+    "A46 old-application rollback and complete volume restore",
+    "A47 sustained performance and million-order query targets"
+  ],
+  "privatePropertiesOrEnvironmentCopied": false
+}

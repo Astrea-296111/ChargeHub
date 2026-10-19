@@ -1,0 +1,1012 @@
+{
+  "schemaVersion": 1,
+  "status": "PASS",
+  "candidateGitSha": "302507165a4496ded25ac6ff0505a93869bec47c",
+  "completedAtUtc": "2026-10-19T11:03:49Z",
+  "scope": "Complete Maven reactor verify: unit, domain, actual Tomcat HTTP and real MySQL/Redis integration suites. This does not certify Compose process-crash, broker fault, Redis server-outage, application rollback or performance gates.",
+  "summary": {
+    "tests": 128,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "testClasses": 26,
+    "realDependencyTestClasses": 9,
+    "realDependencyTestCases": 38,
+    "otherUnitAndDomainTestCases": 90
+  },
+  "build": {
+    "command": "python3 scripts/mysql-integration.py",
+    "mavenCommand": "bash scripts/mvn.sh -B -ntp verify",
+    "result": "BUILD SUCCESS",
+    "javaRuntimeVersion": "21.0.12.1",
+    "springBootVersion": "4.1.1"
+  },
+  "provenance": {
+    "sourceLogPath": ".local/enterprise-final-unit-integration.log",
+    "sourceLogSha256": "50d570053842be0c902460a5c3521298220ccdf7f5c76a2460f2ed673d035363",
+    "sourceFilesFingerprintSha256": "64ca87159fc0dceda27aeb26dfaab435a8d6e63b448d3a6b8ab9b4f1a31629c7",
+    "sourceFileCount": 120,
+    "sourceWorkingTreeMatchesCandidate": true,
+    "privatePropertiesOrEnvironmentCopied": false
+  },
+  "suites": [
+    {
+      "className": "com.chargehub.app.BenefitConcurrencyTest",
+      "module": "chargehub-app",
+      "reportPath": "chargehub-app/target/surefire-reports/TEST-com.chargehub.app.BenefitConcurrencyTest.xml",
+      "reportSha256": "9e00216de05db30fdec8ee9542a42000b7b2b25b3957914977bef2e098253113",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 13.081,
+      "testCases": [
+        {
+          "name": "inventoryOwnershipQuotaAndExpiryRemainConsistentUnderConcurrency",
+          "status": "PASS",
+          "elapsedSeconds": 13.064
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.app.CatalogMysqlRedisTest",
+      "module": "chargehub-app",
+      "reportPath": "chargehub-app/target/surefire-reports/TEST-com.chargehub.app.CatalogMysqlRedisTest.xml",
+      "reportSha256": "330c2355b5c6defc48f5f65f7a2e4339d556293e0bf5bf8fad3fa6243d91e91a",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 2.485,
+      "testCases": [
+        {
+          "name": "A03_A04_publicationCoverageFrozenBillingAndCommitOnlyCacheInvalidation",
+          "status": "PASS",
+          "elapsedSeconds": 0.467
+        },
+        {
+          "name": "A09_A10_A11_A12_A13_resourceContentionIdempotencyAndAllOrNothingBenefits",
+          "status": "PASS",
+          "elapsedSeconds": 0.229
+        },
+        {
+          "name": "A29_A30_A31_expiryFrozenMonthZeroDiscountAndPublishedTemplateProtection",
+          "status": "PASS",
+          "elapsedSeconds": 0.096
+        },
+        {
+          "name": "operationalDisableAndMembershipRegrantPreserveDatabaseRulesAndFrozenReservations",
+          "status": "PASS",
+          "elapsedSeconds": 0.095
+        },
+        {
+          "name": "A39_redisDisconnectCannotPreventDatabaseReadsOrdersClaimsOrRefundIntents",
+          "status": "PASS",
+          "elapsedSeconds": 0.1
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.app.FinanceInvariantIntegrationTest",
+      "module": "chargehub-app",
+      "reportPath": "chargehub-app/target/surefire-reports/TEST-com.chargehub.app.FinanceInvariantIntegrationTest.xml",
+      "reportSha256": "1d7034fe162eaee32242b1f0234a9b99b2117e96e3c502996a7bf9feb5c6e9ee",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 3.121,
+      "testCases": [
+        {
+          "name": "financialFaultsConcurrencyAndAuditedRecoveryPreserveImmutableMoney",
+          "status": "PASS",
+          "elapsedSeconds": 3.118
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.app.HttpAcceptanceTest",
+      "module": "chargehub-app",
+      "reportPath": "chargehub-app/target/surefire-reports/TEST-com.chargehub.app.HttpAcceptanceTest.xml",
+      "reportSha256": "e307f1628529a7b198b38439fce3b78491c248b0ab8949e52bcd422102bc5e28",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 9.138,
+      "testCases": [
+        {
+          "name": "invalidSignatureTamperingAndDuplicateJsonNeverBecomeFinancialSuccess",
+          "status": "PASS",
+          "elapsedSeconds": 1.279
+        },
+        {
+          "name": "validCallbackNonceReplayIsRejectedAndOnlyOneCaptureAndStartIntentExist",
+          "status": "PASS",
+          "elapsedSeconds": 0.936
+        },
+        {
+          "name": "twentyHttpIdempotencyReplaysReturnIdenticalBusinessDataAndChangedBodyConflicts",
+          "status": "PASS",
+          "elapsedSeconds": 1.124
+        },
+        {
+          "name": "signedAmountAndCurrencyMismatchesRemainDifferenceFactsWithoutStartingOrCapturing",
+          "status": "PASS",
+          "elapsedSeconds": 1.959
+        },
+        {
+          "name": "anotherCustomersReadStopFundsAndBillAreInvisibleAndMeterOperationsAreForbidden",
+          "status": "PASS",
+          "elapsedSeconds": 0.962
+        },
+        {
+          "name": "malformedWritesAreRejectedBeforeAnyOrderResourceOrOutboxEffect",
+          "status": "PASS",
+          "elapsedSeconds": 0.959
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.app.IdentityMysqlTest",
+      "module": "chargehub-app",
+      "reportPath": "chargehub-app/target/surefire-reports/TEST-com.chargehub.app.IdentityMysqlTest.xml",
+      "reportSha256": "b3a909fe1dd093c7f77c3403b30b5f06ae031f88397cc84314442fc85cb28a60",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 1.353,
+      "testCases": [
+        {
+          "name": "roleRacesRevocationSharedLimitsAndAuditUseRealInnoDb",
+          "status": "PASS",
+          "elapsedSeconds": 1.352
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.app.MessageMysqlTest",
+      "module": "chargehub-app",
+      "reportPath": "chargehub-app/target/surefire-reports/TEST-com.chargehub.app.MessageMysqlTest.xml",
+      "reportSha256": "8340db0d7f10aae82343acf2836fb7c2c80be959c315ed9551c5c13fcbb71fa8",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 1.057,
+      "testCases": [
+        {
+          "name": "inboxProofRollbackFencingDedupTamperAndAuditedReplayUseOriginalEvent",
+          "status": "PASS",
+          "elapsedSeconds": 1.056
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.app.MessagingHeartbeatTest",
+      "module": "chargehub-app",
+      "reportPath": "chargehub-app/target/surefire-reports/TEST-com.chargehub.app.MessagingHeartbeatTest.xml",
+      "reportSha256": "cf78f9b594298edcb4d3ccddd7acec42f1c034d4e4b7528c15dbfcef2ebc32b9",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 0.205,
+      "testCases": [
+        {
+          "name": "transientBrokerVisibilityFailureDoesNotAbandonDatabaseLeaseRenewal",
+          "status": "PASS",
+          "elapsedSeconds": 0.034
+        },
+        {
+          "name": "longHandlerKeepsDatabaseAndBrokerLeasesAliveThenStopsAllRenewals",
+          "status": "PASS",
+          "elapsedSeconds": 0.107
+        },
+        {
+          "name": "lostTokenStopsBrokerVisibilityExtensionsAndCannotReviveClaim",
+          "status": "PASS",
+          "elapsedSeconds": 0.062
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.app.ReconciliationMysqlTest",
+      "module": "chargehub-app",
+      "reportPath": "chargehub-app/target/surefire-reports/TEST-com.chargehub.app.ReconciliationMysqlTest.xml",
+      "reportSha256": "6535b5a035e72f21b88e86fdcb7e40ec51c077c20d10b0506c8e6e73592d1146",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 0.692,
+      "testCases": [
+        {
+          "name": "bidirectionalComparisonDedupAndConcurrentImportsKeepMoneyImmutable",
+          "status": "PASS",
+          "elapsedSeconds": 0.69
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.app.SessionAcceptanceTest",
+      "module": "chargehub-app",
+      "reportPath": "chargehub-app/target/surefire-reports/TEST-com.chargehub.app.SessionAcceptanceTest.xml",
+      "reportSha256": "5d17ce1ce84152593529fcea029c013cf01f8d376e43e7beb58a9cf6870536a8",
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 2.977,
+      "testCases": [
+        {
+          "name": "A25_completeSequenceWithoutAnActualTariffBoundaryNeverInterpolatesAFormalBill",
+          "status": "PASS",
+          "elapsedSeconds": 0.088
+        },
+        {
+          "name": "A36_actualOvershootIsNeverTruncatedAndDebtBlocksFurtherCharging",
+          "status": "PASS",
+          "elapsedSeconds": 0.06
+        },
+        {
+          "name": "A27_A28_lostStopAcknowledgementReplayFinalizesExactlyOnce",
+          "status": "PASS",
+          "elapsedSeconds": 0.157
+        },
+        {
+          "name": "A31_zeroMemberDiscountReleasesReservedQuota",
+          "status": "PASS",
+          "elapsedSeconds": 0.055
+        },
+        {
+          "name": "A24_conflictingSequenceNeedsIndependentEvidenceDecisionAndNeverOverwritesFacts",
+          "status": "PASS",
+          "elapsedSeconds": 0.142
+        },
+        {
+          "name": "issuedBillsRejectManualChangesAndPreexistingFinancialDifferenceSurvivesBilling",
+          "status": "PASS",
+          "elapsedSeconds": 0.061
+        },
+        {
+          "name": "A26_meterRollbackRetainsEvidenceAndCorrectedDeviceFactNeedsResolution",
+          "status": "PASS",
+          "elapsedSeconds": 0.126
+        },
+        {
+          "name": "A32_zeroEnergyAtTheSameMillisecondRefundsInFullAndUsesNoBenefits",
+          "status": "PASS",
+          "elapsedSeconds": 0.073
+        },
+        {
+          "name": "A25_confirmedStopWithGapReleasesSafeResourcesAndLateReplayCannotReleaseNewOrder",
+          "status": "PASS",
+          "elapsedSeconds": 0.095
+        },
+        {
+          "name": "A22_duplicateStartedFactKeepsOneSessionAndOneMeterSample",
+          "status": "PASS",
+          "elapsedSeconds": 0.093
+        },
+        {
+          "name": "A21_authoritativeNotStartedCancelsAndReservesOneFullRefund",
+          "status": "PASS",
+          "elapsedSeconds": 0.058
+        },
+        {
+          "name": "eventIdConflictingPayloadIsAppendOnlyAndRejectedForeignDeviceCannotPoisonBilling",
+          "status": "PASS",
+          "elapsedSeconds": 0.079
+        },
+        {
+          "name": "A29_couponBelowThresholdIsReleasedAsExpiredAtSettlement",
+          "status": "PASS",
+          "elapsedSeconds": 0.063
+        },
+        {
+          "name": "replayUnknownIsVisiblePendingAndNewEvidenceInvalidatesUnapprovedProposal",
+          "status": "PASS",
+          "elapsedSeconds": 0.096
+        },
+        {
+          "name": "A30_monthBoundaryConsumesTheReservedMonthAndUsesRealMidnightMeter",
+          "status": "PASS",
+          "elapsedSeconds": 0.063
+        },
+        {
+          "name": "A20_unknownStartDoesNotRefundAndActualStartedRestoresOwnership",
+          "status": "PASS",
+          "elapsedSeconds": 0.042
+        },
+        {
+          "name": "A23_outOfOrderAndDuplicateSamplesNeverAccumulateEnergyTwice",
+          "status": "PASS",
+          "elapsedSeconds": 0.096
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.app.WorkflowMysqlTest",
+      "module": "chargehub-app",
+      "reportPath": "chargehub-app/target/surefire-reports/TEST-com.chargehub.app.WorkflowMysqlTest.xml",
+      "reportSha256": "8441a7edf26dbb3c367f3dcfe86fbc254aebe0f58002d5bede9feec44aab7c36",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 5.354,
+      "testCases": [
+        {
+          "name": "memberCouponDuplicateMoneyAndOutOfOrderMeteringCloseAt2100",
+          "status": "PASS",
+          "elapsedSeconds": 0.938
+        },
+        {
+          "name": "sameKeyAndResourceRacesPreserveOneBindingAndRollback",
+          "status": "PASS",
+          "elapsedSeconds": 0.061
+        },
+        {
+          "name": "leaseTakeoverRejectsStaleAcknowledgement",
+          "status": "PASS",
+          "elapsedSeconds": 0.02
+        },
+        {
+          "name": "realMySqlMigrationAndUtcSessionAreRepeatable",
+          "status": "PASS",
+          "elapsedSeconds": 0.047
+        },
+        {
+          "name": "canceledAndDeadlinePaymentsAreCapturedAndFullyRefundedWithoutStart",
+          "status": "PASS",
+          "elapsedSeconds": 0.081
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.charging.SessionServiceTest",
+      "module": "chargehub-charging",
+      "reportPath": "chargehub-charging/target/surefire-reports/TEST-com.chargehub.charging.SessionServiceTest.xml",
+      "reportSha256": "28db85090fb56c30ae2571df568b948429d86f69b2627671733fe34e29d69659",
+      "tests": 15,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 1.061,
+      "testCases": [
+        {
+          "name": "serviceAfterFullCancellationIsAFinancialDifferenceRatherThanAnotherRefund",
+          "status": "PASS",
+          "elapsedSeconds": 0.974
+        },
+        {
+          "name": "missingBoundaryIsNeverEstimatedFromNormalSamples",
+          "status": "PASS",
+          "elapsedSeconds": 0.013
+        },
+        {
+          "name": "prepaidBackstopLeavesCertifiedChargesBelowMarginRunning",
+          "status": "PASS",
+          "elapsedSeconds": 0.007
+        },
+        {
+          "name": "midnightRequiresAnExplicitDayBoundaryEvenWithTheSamePrice",
+          "status": "PASS",
+          "elapsedSeconds": 0.004
+        },
+        {
+          "name": "prepaidBackstopConservativelyStopsOnAnUncertifiedMeteringGap",
+          "status": "PASS",
+          "elapsedSeconds": 0.005
+        },
+        {
+          "name": "prepaidBackstopStopsAtRaw9500EvenThoughBenefitsWouldReducePayableTo8900",
+          "status": "PASS",
+          "elapsedSeconds": 0.005
+        },
+        {
+          "name": "ordinarySamplesDoNotIntroduceRoundingSegments",
+          "status": "PASS",
+          "elapsedSeconds": 0.001
+        },
+        {
+          "name": "exactTariffBoundaryUsesCumulativeDifferencesAndFrozenRates",
+          "status": "PASS",
+          "elapsedSeconds": 0.002
+        },
+        {
+          "name": "sampleAtEndBoundaryDoesNotRequireAnExtraBoundaryEvent",
+          "status": "PASS",
+          "elapsedSeconds": 0.001
+        },
+        {
+          "name": "gapsRollbackAndReversedTimesCannotGenerateBills",
+          "status": "PASS",
+          "elapsedSeconds": 0.001
+        },
+        {
+          "name": "prepaidBackstopIncludesActiveReviewAndExceptionWithoutHidingTheirReason",
+          "status": "PASS",
+          "elapsedSeconds": 0.006
+        },
+        {
+          "name": "billResponseUsesThePublishedAmountsObject",
+          "status": "PASS",
+          "elapsedSeconds": 0.003
+        },
+        {
+          "name": "immediateStopAtSameMillisecondWithSameMeterHasZeroBillAndNoItems",
+          "status": "PASS",
+          "elapsedSeconds": 0.002
+        },
+        {
+          "name": "prepaidBackstopNeverCreatesAStopForAnAlreadyEndedSession",
+          "status": "PASS",
+          "elapsedSeconds": 0.002
+        },
+        {
+          "name": "malformedDeviceEventsAreRejectedBeforeAnyDatabaseEffects",
+          "status": "PASS",
+          "elapsedSeconds": 0.003
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.identity.BearerTokenFilterTest",
+      "module": "chargehub-identity",
+      "reportPath": "chargehub-identity/target/surefire-reports/TEST-com.chargehub.identity.BearerTokenFilterTest.xml",
+      "reportSha256": "add6d4b8a9cb2665754215b6115da405676caf513ec24c9e2d1eb51dbd5f7c04",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 0.172,
+      "testCases": [
+        {
+          "name": "ambiguousAuthorizationHeadersAreRejectedBeforeDatabaseLookup",
+          "status": "PASS",
+          "elapsedSeconds": 0.158
+        },
+        {
+          "name": "dedicatedMonitorCannotUseItsOpsRoleOnBusinessEndpoints",
+          "status": "PASS",
+          "elapsedSeconds": 0.011
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.identity.TokenServiceTest",
+      "module": "chargehub-identity",
+      "reportPath": "chargehub-identity/target/surefire-reports/TEST-com.chargehub.identity.TokenServiceTest.xml",
+      "reportSha256": "120da97a4912cecdeb3a6ccebc61873def82ba6ef48ccad5648074898b26d961",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 1.163,
+      "testCases": [
+        {
+          "name": "disabledUserCannotLoginEvenWithCorrectPassword",
+          "status": "PASS",
+          "elapsedSeconds": 0.902
+        },
+        {
+          "name": "loginPersistsHashAndLoadsRolesFromServer",
+          "status": "PASS",
+          "elapsedSeconds": 0.189
+        },
+        {
+          "name": "malformedBearerNeverReachesDatabase",
+          "status": "PASS",
+          "elapsedSeconds": 0.012
+        },
+        {
+          "name": "unknownAndDisabledAccountsReturnSameRejection",
+          "status": "PASS",
+          "elapsedSeconds": 0.005
+        },
+        {
+          "name": "rolesAreReloadedForEveryRequestUsingSameToken",
+          "status": "PASS",
+          "elapsedSeconds": 0.008
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.infrastructure.ApiResponseTest",
+      "module": "chargehub-infrastructure",
+      "reportPath": "chargehub-infrastructure/target/surefire-reports/TEST-com.chargehub.infrastructure.ApiResponseTest.xml",
+      "reportSha256": "aba51c6f388d9649d55921939ecf040c549aad76dfa3fa6b6512f5c11a82ce6d",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 0.309,
+      "testCases": [
+        {
+          "name": "preservesLargeDatabaseIdsAsStringsAndMoneyAsNumbers",
+          "status": "PASS",
+          "elapsedSeconds": 0.081
+        },
+        {
+          "name": "javaTimeSnapshotRoundTripsAsUtcString",
+          "status": "PASS",
+          "elapsedSeconds": 0.207
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.infrastructure.AuthenticationBodyFilterTest",
+      "module": "chargehub-infrastructure",
+      "reportPath": "chargehub-infrastructure/target/surefire-reports/TEST-com.chargehub.infrastructure.AuthenticationBodyFilterTest.xml",
+      "reportSha256": "1c5fae0d68a24b00782ff069d5b4521f22766b70f8f2127f337027b5cedc9606",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 0.056,
+      "testCases": [
+        {
+          "name": "financeMultipartKeepsSeparateTenMiBContract",
+          "status": "PASS",
+          "elapsedSeconds": 0.016
+        },
+        {
+          "name": "existingNoBodyCommandsRemainValid",
+          "status": "PASS",
+          "elapsedSeconds": 0.007
+        },
+        {
+          "name": "normalBusinessWritesAlsoRejectOversizeAndDuplicateJson",
+          "status": "PASS",
+          "elapsedSeconds": 0.018
+        },
+        {
+          "name": "rejectsDuplicateFieldsTrailingObjectsAndArrays",
+          "status": "PASS",
+          "elapsedSeconds": 0.003
+        },
+        {
+          "name": "rawCallbackBodyReachesVerifierWithoutReencoding",
+          "status": "PASS",
+          "elapsedSeconds": 0.002
+        },
+        {
+          "name": "chunkedCallbacksCannotBypassRawSizeLimit",
+          "status": "PASS",
+          "elapsedSeconds": 0.005
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.infrastructure.HmacTest",
+      "module": "chargehub-infrastructure",
+      "reportPath": "chargehub-infrastructure/target/surefire-reports/TEST-com.chargehub.infrastructure.HmacTest.xml",
+      "reportSha256": "84769b69e44a70930940b1176d0c909b52545ce88dce37b96e1dd67466612ecd",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 0.994,
+      "testCases": [
+        {
+          "name": "canonicalSignatureMatchesIndependentVector",
+          "status": "PASS",
+          "elapsedSeconds": 0.039
+        },
+        {
+          "name": "rotationAcceptsExplicitOldAndNewKeysButRejectsOtherIntegrationOwner",
+          "status": "PASS",
+          "elapsedSeconds": 0.881
+        },
+        {
+          "name": "acceptsValidSignatureAndStoresNonce",
+          "status": "PASS",
+          "elapsedSeconds": 0.048
+        },
+        {
+          "name": "rejectsExpiredSignatureAndWrongKeyOwnership",
+          "status": "PASS",
+          "elapsedSeconds": 0.006
+        },
+        {
+          "name": "rejectsTamperedBodyBeforeRecordingNonce",
+          "status": "PASS",
+          "elapsedSeconds": 0.004
+        },
+        {
+          "name": "rejectsReplayUsingPersistentUniqueConstraint",
+          "status": "PASS",
+          "elapsedSeconds": 0.006
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.infrastructure.WorkflowMessageTest",
+      "module": "chargehub-infrastructure",
+      "reportPath": "chargehub-infrastructure/target/surefire-reports/TEST-com.chargehub.infrastructure.WorkflowMessageTest.xml",
+      "reportSha256": "9d4a10c11e70a80d66b2f8b4cfaa386e2ec1d51b574209841f667887f0a542b4",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 0.021,
+      "testCases": [
+        {
+          "name": "changingPayloadOrEnvelopeMetadataChangesIntegrityHash",
+          "status": "PASS",
+          "elapsedSeconds": 0.005
+        },
+        {
+          "name": "canonicalTransportRoundTripsWithStableNestedHash",
+          "status": "PASS",
+          "elapsedSeconds": 0.007
+        },
+        {
+          "name": "transportIsDerivedFromPersistedOutboxTimeAndOriginalFields",
+          "status": "PASS",
+          "elapsedSeconds": 0.001
+        },
+        {
+          "name": "rejectsUnknownSchemaFractionalVersionExtraFieldsAndMalformedUtf8",
+          "status": "PASS",
+          "elapsedSeconds": 0.003
+        },
+        {
+          "name": "unknownEventsAndNonCanonicalBusinessIdsAreRejectedBeforeDispatch",
+          "status": "PASS",
+          "elapsedSeconds": 0.002
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.payment.ChannelFinancialFactTest",
+      "module": "chargehub-payment",
+      "reportPath": "chargehub-payment/target/surefire-reports/TEST-com.chargehub.payment.ChannelFinancialFactTest.xml",
+      "reportSha256": "8da83436fdd65a2be948bda7f6f00791613afc08afd043f4330169011646b344",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 0.013,
+      "testCases": [
+        {
+          "name": "fractionalOrStringAmountsCannotBecomeIntegerMoney",
+          "status": "PASS",
+          "elapsedSeconds": 0.002
+        },
+        {
+          "name": "missingProviderOrFinalOccurrenceIsNotValidEvidence",
+          "status": "PASS",
+          "elapsedSeconds": 0.002
+        },
+        {
+          "name": "queryFactProducesStableBusinessEventWithoutClaimingHttpSuccessMeansPaymentSuccess",
+          "status": "PASS",
+          "elapsedSeconds": 0.007
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.payment.PaymentServiceTest",
+      "module": "chargehub-payment",
+      "reportPath": "chargehub-payment/target/surefire-reports/TEST-com.chargehub.payment.PaymentServiceTest.xml",
+      "reportSha256": "2316af61ce7691fabc26214b56a3a0626764affaf3f95ca41fc27891bca9fc45",
+      "tests": 8,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 1.027,
+      "testCases": [
+        {
+          "name": "successfulRefundTransfersReservationOnceAndNeverRegresses",
+          "status": "PASS",
+          "elapsedSeconds": 0.914
+        },
+        {
+          "name": "duplicateCaptureProducesOneImmutableCashFactAndHashConflictCannotChangeIt",
+          "status": "PASS",
+          "elapsedSeconds": 0.007
+        },
+        {
+          "name": "lateDuplicateWithDifferentOccurrenceCannotRewriteCapturedFact",
+          "status": "PASS",
+          "elapsedSeconds": 0.005
+        },
+        {
+          "name": "closedPaymentNotificationIsDeduplicatedAndCannotChangeItsPayload",
+          "status": "PASS",
+          "elapsedSeconds": 0.005
+        },
+        {
+          "name": "retryableFailureReReservesSameRefundAndOldFailureCannotReleaseNewAttempt",
+          "status": "PASS",
+          "elapsedSeconds": 0.013
+        },
+        {
+          "name": "definitiveFailedRefundReleasesReservationOnceAndCannotBecomeSuccess",
+          "status": "PASS",
+          "elapsedSeconds": 0.02
+        },
+        {
+          "name": "mismatchedAmountAndFractionalAmountCannotCaptureMoney",
+          "status": "PASS",
+          "elapsedSeconds": 0.004
+        },
+        {
+          "name": "refundReasonReservesOnceAndUnknownContinuesToHoldCapacity",
+          "status": "PASS",
+          "elapsedSeconds": 0.006
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.reconcile.ChannelCsvTest",
+      "module": "chargehub-reconcile",
+      "reportPath": "chargehub-reconcile/target/surefire-reports/TEST-com.chargehub.reconcile.ChannelCsvTest.xml",
+      "reportSha256": "73d66cb9f5ee9f0b712756c116d3f1fb2c814e2a08bd8f21305c1d4770a9f92f",
+      "tests": 16,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 0.159,
+      "testCases": [
+        {
+          "name": "rejectsNonPositiveOrNonIntegerOrOverflowMoney(String)[1]",
+          "status": "PASS",
+          "elapsedSeconds": 0.027
+        },
+        {
+          "name": "rejectsNonPositiveOrNonIntegerOrOverflowMoney(String)[2]",
+          "status": "PASS",
+          "elapsedSeconds": 0.002
+        },
+        {
+          "name": "rejectsNonPositiveOrNonIntegerOrOverflowMoney(String)[3]",
+          "status": "PASS",
+          "elapsedSeconds": 0.001
+        },
+        {
+          "name": "rejectsNonPositiveOrNonIntegerOrOverflowMoney(String)[4]",
+          "status": "PASS",
+          "elapsedSeconds": 0.001
+        },
+        {
+          "name": "rejectsNonPositiveOrNonIntegerOrOverflowMoney(String)[5]",
+          "status": "PASS",
+          "elapsedSeconds": 0.001
+        },
+        {
+          "name": "rejectsNonPositiveOrNonIntegerOrOverflowMoney(String)[6]",
+          "status": "PASS",
+          "elapsedSeconds": 0.001
+        },
+        {
+          "name": "rejectsNonPositiveOrNonIntegerOrOverflowMoney(String)[7]",
+          "status": "PASS",
+          "elapsedSeconds": 0.003
+        },
+        {
+          "name": "rejectsNonPositiveOrNonIntegerOrOverflowMoney(String)[8]",
+          "status": "PASS",
+          "elapsedSeconds": 0.001
+        },
+        {
+          "name": "allowsEmptyDailyExportButKeepsKnownCurrencyForDifferenceDetection",
+          "status": "PASS",
+          "elapsedSeconds": 0.005
+        },
+        {
+          "name": "rejectsOversizedFilesBeforeParsing",
+          "status": "PASS",
+          "elapsedSeconds": 0.037
+        },
+        {
+          "name": "rejectsMalformedAndIncompleteRows",
+          "status": "PASS",
+          "elapsedSeconds": 0.005
+        },
+        {
+          "name": "enforcesMatchingBatchMetadataAndHeader",
+          "status": "PASS",
+          "elapsedSeconds": 0.003
+        },
+        {
+          "name": "acceptsCanonicalExportAndQuotedCrLfBom",
+          "status": "PASS",
+          "elapsedSeconds": 0.002
+        },
+        {
+          "name": "rejectsDuplicateProviderOrBusinessIdentities",
+          "status": "PASS",
+          "elapsedSeconds": 0.002
+        },
+        {
+          "name": "validatesRefundOriginalPaymentAndRefundNumbers",
+          "status": "PASS",
+          "elapsedSeconds": 0.002
+        },
+        {
+          "name": "archivesUtcInstantInDeclaredBusinessTimezone",
+          "status": "PASS",
+          "elapsedSeconds": 0.002
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.reconcile.FinanceControllerSecurityTest",
+      "module": "chargehub-reconcile",
+      "reportPath": "chargehub-reconcile/target/surefire-reports/TEST-com.chargehub.reconcile.FinanceControllerSecurityTest.xml",
+      "reportSha256": "5e14e58086f00d3a8889d8a900486ba11f217477da4d7475819b816bab80255e",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 1.114,
+      "testCases": [
+        {
+          "name": "httpBoundaryRejectsBlankReasonBeforeAnyRecoveryWork",
+          "status": "PASS",
+          "elapsedSeconds": 1.02
+        },
+        {
+          "name": "customerAndOpsCannotRecoverMoneyButFinanceAndAdminUseServerIdentity",
+          "status": "PASS",
+          "elapsedSeconds": 0.047
+        },
+        {
+          "name": "unauthenticatedFinanceOperationIsRejected",
+          "status": "PASS",
+          "elapsedSeconds": 0.042
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.reconcile.ReconciliationComparisonTest",
+      "module": "chargehub-reconcile",
+      "reportPath": "chargehub-reconcile/target/surefire-reports/TEST-com.chargehub.reconcile.ReconciliationComparisonTest.xml",
+      "reportSha256": "a501690f395d942c99f485f17f49d1bc96307c76528794e2ede3f90bb8ca2186",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 0.008,
+      "testCases": [
+        {
+          "name": "channelFactWithMissingLocalCaptureIsRecoverableEvidence",
+          "status": "PASS",
+          "elapsedSeconds": 0.002
+        },
+        {
+          "name": "exactMoneyAndBusinessAndDateMatch",
+          "status": "PASS",
+          "elapsedSeconds": 0.001
+        },
+        {
+          "name": "rejectsCashFromAnotherBusinessDateAndRefundFromAnotherPayment",
+          "status": "PASS",
+          "elapsedSeconds": 0.001
+        },
+        {
+          "name": "expectedAmountAndCurrencyAreCheckedEvenWithoutLocalMoney",
+          "status": "PASS",
+          "elapsedSeconds": 0.0
+        },
+        {
+          "name": "rejectsWrongBusinessAndProviderAndMoneyRatherThanMatchingDailyTotals",
+          "status": "PASS",
+          "elapsedSeconds": 0.001
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.reconcile.ReconciliationServiceTest",
+      "module": "chargehub-reconcile",
+      "reportPath": "chargehub-reconcile/target/surefire-reports/TEST-com.chargehub.reconcile.ReconciliationServiceTest.xml",
+      "reportSha256": "296d9c0fa0ac864dc87d9478afbb81b0c2e9d98a15a557300970372de7a4e889",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 0.961,
+      "testCases": [
+        {
+          "name": "changedContentsCannotHideBehindExistingBatchMetadata",
+          "status": "PASS",
+          "elapsedSeconds": 0.846
+        },
+        {
+          "name": "localOnlyFundsBecomeIncompleteEvidenceAndNeverGetDeletedOrDeclaredAbsent",
+          "status": "PASS",
+          "elapsedSeconds": 0.106
+        },
+        {
+          "name": "sameBatchWithSameHashReturnsExistingResultWithoutReprocessing",
+          "status": "PASS",
+          "elapsedSeconds": 0.004
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.station.BillingCalculatorTest",
+      "module": "chargehub-station",
+      "reportPath": "chargehub-station/target/surefire-reports/TEST-com.chargehub.station.BillingCalculatorTest.xml",
+      "reportSha256": "61e96d7469d92f22a71d971325e882950c515cc3dee163d7586ce6ad017c40ef",
+      "tests": 2,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 0.173,
+      "testCases": [
+        {
+          "name": "allEightAuthoritativeBillingVectors",
+          "status": "PASS",
+          "elapsedSeconds": 0.15
+        },
+        {
+          "name": "rejectsInexactOrOverflowingMoneyInsteadOfWrapping",
+          "status": "PASS",
+          "elapsedSeconds": 0.006
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.station.CatalogCacheTest",
+      "module": "chargehub-station",
+      "reportPath": "chargehub-station/target/surefire-reports/TEST-com.chargehub.station.CatalogCacheTest.xml",
+      "reportSha256": "accaed18fe272e4b453cdcbab29344ba1e08d26c3dbb877089031bcb27604e08",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 1.106,
+      "testCases": [
+        {
+          "name": "prePublicationReaderCannotRepopulateTheNewGenerationWithOldPrices",
+          "status": "PASS",
+          "elapsedSeconds": 1.078
+        },
+        {
+          "name": "unavailableRedisCannotFailReadsAndCooldownAvoidsRepeatedBlockingCalls",
+          "status": "PASS",
+          "elapsedSeconds": 0.017
+        },
+        {
+          "name": "invalidationRunsOnlyAfterCommitAndTransactionalReadsBypassRedis",
+          "status": "PASS",
+          "elapsedSeconds": 0.005
+        }
+      ]
+    },
+    {
+      "className": "com.chargehub.station.TariffRulesTest",
+      "module": "chargehub-station",
+      "reportPath": "chargehub-station/target/surefire-reports/TEST-com.chargehub.station.TariffRulesTest.xml",
+      "reportSha256": "ffb9ccd777e3c02cc78cd47627ba2e2945dcc51f9d79fdce82d799ebd4fda974",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsedSeconds": 0.01,
+      "testCases": [
+        {
+          "name": "allowsIncompleteDraftButRejectsFractionalOrNegativeRates",
+          "status": "PASS",
+          "elapsedSeconds": 0.004
+        },
+        {
+          "name": "acceptsFullDayAndSortsBeforeValidation",
+          "status": "PASS",
+          "elapsedSeconds": 0.001
+        },
+        {
+          "name": "rejectsGapsOverlapsAndMissingEdgesAtPublication",
+          "status": "PASS",
+          "elapsedSeconds": 0.001
+        }
+      ]
+    }
+  ]
+}

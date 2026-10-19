@@ -4383,8 +4383,8 @@ components:
           description: 64位数据库编号使用十进制字符串
         deviceId:
           type: string
-          pattern: ^[1-9][0-9]{0,18}$
-          description: 64位数据库编号使用十进制字符串
+          maxLength: 64
+          description: 设备业务标识，来自VARCHAR(64)，不是数据库数字主键
         connectorCode:
           type: string
           maxLength: 40
@@ -5640,8 +5640,8 @@ components:
           format: uuid
         deviceId:
           type: string
-          pattern: ^[1-9][0-9]{0,18}$
-          description: 64位数据库编号使用十进制字符串
+          maxLength: 64
+          description: 设备业务标识，来自VARCHAR(64)，不是数据库数字主键
         connectorId:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
@@ -5779,8 +5779,7 @@ components:
           description: 64位数据库编号使用十进制字符串
         eventId:
           type: string
-          pattern: ^[1-9][0-9]{0,18}$
-          description: 64位数据库编号使用十进制字符串
+          format: uuid
         eventType:
           type: string
           maxLength: 24
@@ -5829,12 +5828,11 @@ components:
           description: 64位数据库编号使用十进制字符串
         deviceId:
           type: string
-          pattern: ^[1-9][0-9]{0,18}$
-          description: 64位数据库编号使用十进制字符串
+          maxLength: 64
+          description: 设备业务标识，来自VARCHAR(64)，不是数据库数字主键
         eventId:
           type: string
-          pattern: ^[1-9][0-9]{0,18}$
-          description: 64位数据库编号使用十进制字符串
+          format: uuid
         sessionNo:
           type: string
           format: uuid
@@ -6490,15 +6488,13 @@ components:
           description: 64位数据库编号使用十进制字符串
         eventId:
           type: string
-          pattern: ^[1-9][0-9]{0,18}$
-          description: 64位数据库编号使用十进制字符串
+          format: uuid
         eventName:
           type: string
           maxLength: 64
         aggregateId:
           type: string
-          pattern: ^[1-9][0-9]{0,18}$
-          description: 64位数据库编号使用十进制字符串
+          format: uuid
         status:
           type: string
           enum:
@@ -6587,8 +6583,7 @@ components:
           maxLength: 255
         requestId:
           type: string
-          pattern: ^[1-9][0-9]{0,18}$
-          description: 64位数据库编号使用十进制字符串
+          format: uuid
         createdAt:
           type: string
           format: date-time

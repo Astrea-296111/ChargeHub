@@ -1,0 +1,19 @@
+{
+  "nativeClient": "5.2.2",
+  "broker": "5.5.0",
+  "topic": "ChargeHubSmoke",
+  "eventKey": "92dd5b44-a54f-46ad-9c10-7940955cdba4",
+  "brokerMessageId": "0126D5BD75BED100010AE7954B00000000",
+  "deliveryAttempt": 1,
+  "bodyVerified": true,
+  "acknowledged": true,
+  "executedAt": "2026-10-19T11:13:15.953181+00:00",
+  "brokerImage": "apache/rocketmq:5.5.0@sha256:7e8f6c9dbd9df742ed26ba69c00d4ad69e2f86a56f3ca7782ff8144dd0798132",
+  "clientSha256": "71dfe1c545b207a3016919a52be1ab984c385ea94cb8fd622c4e252b5cba37e5",
+  "officialExampleCommit": "6e2185bb638b639663bda240cf119804a595e099",
+  "status": "PASS",
+  "schemaVersion": 1,
+  "sourceReportPath": ".local/reports/mq-native-smoke.json",
+  "sourceReportSha256": "fb5a8deb9d52df880601d4bcd394a96c26d24f8ca83426ac248d057dbfe16463",
+  "privatePropertiesOrEnvironmentCopied": false
+}

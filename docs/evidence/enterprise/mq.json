@@ -1,0 +1,308 @@
+{
+  "startedAt": "2026-10-19T11:13:16.003994+00:00",
+  "simulated": true,
+  "broker": "5.5.0",
+  "nativeClient": "5.2.2",
+  "cases": [
+    {
+      "case": "A40",
+      "name": "brokerAcceptedBeforeLocalPublicationMark",
+      "status": "PASS",
+      "eventId": "acae760b-2ee5-47ae-b84e-8ab37f0aead5",
+      "barrier": {
+        "phase": "AFTER_SEND_BEFORE_MARK",
+        "eventId": "acae760b-2ee5-47ae-b84e-8ab37f0aead5",
+        "instance": "812fbc5a8247"
+      },
+      "atBarrier": {
+        "eventId": "acae760b-2ee5-47ae-b84e-8ab37f0aead5",
+        "ackCount": 0,
+        "inboxCount": 0,
+        "payloadHash": "7c33dc93a960c3070e5b79401014891370f5a7af92de43c07654e8cd137ec2eb",
+        "outboxStatus": "PROCESSING",
+        "deliveryToken": null,
+        "deliveryStatus": null,
+        "publishAttempts": 1,
+        "businessAttempts": null,
+        "duplicateAckCount": 0,
+        "maxAckDeliveryAttempt": null
+      },
+      "publication": {
+        "eventId": "acae760b-2ee5-47ae-b84e-8ab37f0aead5",
+        "brokerMessageId": "0122A95816CCA300010AE7956800000000",
+        "publicationCount": 1
+      },
+      "after": {
+        "eventId": "acae760b-2ee5-47ae-b84e-8ab37f0aead5",
+        "ackCount": 2,
+        "inboxCount": 1,
+        "payloadHash": "7c33dc93a960c3070e5b79401014891370f5a7af92de43c07654e8cd137ec2eb",
+        "outboxStatus": "DONE",
+        "deliveryToken": 1,
+        "deliveryStatus": "COMPLETED",
+        "publishAttempts": 2,
+        "businessAttempts": 1,
+        "duplicateAckCount": 1,
+        "maxAckDeliveryAttempt": 1
+      },
+      "money": {
+        "status": "COMPLETED",
+        "orderNo": "92db06fd-25fb-4ed1-bac6-87cab7b32fb4",
+        "billCount": 1,
+        "capturedFen": 10000,
+        "refundCount": 1,
+        "captureCount": 1,
+        "sessionCount": 1,
+        "refundSuccessFen": 7900,
+        "refundReservedFen": 0,
+        "channelCaptureCount": 1,
+        "channelRefundCount": 1
+      }
+    },
+    {
+      "case": "A41",
+      "name": "AFTER_BUSINESS_BEFORE_INBOX",
+      "status": "PASS",
+      "eventId": "63369436-7c91-42da-b47d-0be525e70997",
+      "newTransaction": true,
+      "barrier": {
+        "phase": "AFTER_BUSINESS_BEFORE_INBOX",
+        "eventId": "63369436-7c91-42da-b47d-0be525e70997",
+        "instance": "9ae696e323be"
+      },
+      "before": {
+        "status": "CHARGING",
+        "orderNo": "993e198b-315a-4286-8d03-0f1eac1132fb",
+        "billCount": 0,
+        "capturedFen": 10000,
+        "refundCount": 0,
+        "captureCount": 1,
+        "sessionCount": 1,
+        "refundSuccessFen": 0,
+        "refundReservedFen": 0,
+        "channelCaptureCount": 1,
+        "channelRefundCount": 0
+      },
+      "atBarrier": {
+        "eventId": "63369436-7c91-42da-b47d-0be525e70997",
+        "ackCount": 0,
+        "inboxCount": 0,
+        "payloadHash": "55cd9cca1995c593b0e5370bb692019a8f5916fc06e9f31ba472616db62fd3d5",
+        "outboxStatus": "PUBLISHED",
+        "deliveryToken": 1,
+        "deliveryStatus": "PROCESSING",
+        "publishAttempts": 1,
+        "businessAttempts": 1,
+        "duplicateAckCount": 0,
+        "maxAckDeliveryAttempt": null
+      },
+      "businessCommitted": {
+        "status": "COMPLETED",
+        "orderNo": "993e198b-315a-4286-8d03-0f1eac1132fb",
+        "billCount": 1,
+        "capturedFen": 10000,
+        "refundCount": 1,
+        "captureCount": 1,
+        "sessionCount": 1,
+        "refundSuccessFen": 7400,
+        "refundReservedFen": 0,
+        "channelCaptureCount": 1,
+        "channelRefundCount": 1
+      },
+      "after": {
+        "eventId": "63369436-7c91-42da-b47d-0be525e70997",
+        "ackCount": 1,
+        "inboxCount": 1,
+        "payloadHash": "55cd9cca1995c593b0e5370bb692019a8f5916fc06e9f31ba472616db62fd3d5",
+        "outboxStatus": "DONE",
+        "deliveryToken": 2,
+        "deliveryStatus": "COMPLETED",
+        "publishAttempts": 1,
+        "businessAttempts": 2,
+        "duplicateAckCount": 0,
+        "maxAckDeliveryAttempt": 2
+      },
+      "money": {
+        "status": "COMPLETED",
+        "orderNo": "993e198b-315a-4286-8d03-0f1eac1132fb",
+        "billCount": 1,
+        "capturedFen": 10000,
+        "refundCount": 1,
+        "captureCount": 1,
+        "sessionCount": 1,
+        "refundSuccessFen": 7400,
+        "refundReservedFen": 0,
+        "channelCaptureCount": 1,
+        "channelRefundCount": 1
+      }
+    },
+    {
+      "case": "A41",
+      "name": "AFTER_INBOX_BEFORE_ACK",
+      "status": "PASS",
+      "eventId": "2372ce40-b40c-4f08-aad0-3af76fe466b1",
+      "newTransaction": true,
+      "barrier": {
+        "phase": "AFTER_INBOX_BEFORE_ACK",
+        "eventId": "2372ce40-b40c-4f08-aad0-3af76fe466b1",
+        "instance": "8ce57980651a"
+      },
+      "before": {
+        "status": "CHARGING",
+        "orderNo": "f4d49d57-1392-4a26-a925-42bf762e371f",
+        "billCount": 0,
+        "capturedFen": 10000,
+        "refundCount": 0,
+        "captureCount": 1,
+        "sessionCount": 1,
+        "refundSuccessFen": 0,
+        "refundReservedFen": 0,
+        "channelCaptureCount": 1,
+        "channelRefundCount": 0
+      },
+      "atBarrier": {
+        "eventId": "2372ce40-b40c-4f08-aad0-3af76fe466b1",
+        "ackCount": 0,
+        "inboxCount": 1,
+        "payloadHash": "2aebb0447e3ba5e724e7b561a33ae6093f2b6746528a9d3d9b4d297ed8311951",
+        "outboxStatus": "DONE",
+        "deliveryToken": 1,
+        "deliveryStatus": "COMPLETED",
+        "publishAttempts": 7,
+        "businessAttempts": 1,
+        "duplicateAckCount": 0,
+        "maxAckDeliveryAttempt": null
+      },
+      "businessCommitted": {
+        "status": "COMPLETED",
+        "orderNo": "f4d49d57-1392-4a26-a925-42bf762e371f",
+        "billCount": 1,
+        "capturedFen": 10000,
+        "refundCount": 1,
+        "captureCount": 1,
+        "sessionCount": 1,
+        "refundSuccessFen": 7400,
+        "refundReservedFen": 0,
+        "channelCaptureCount": 1,
+        "channelRefundCount": 1
+      },
+      "after": {
+        "eventId": "2372ce40-b40c-4f08-aad0-3af76fe466b1",
+        "ackCount": 1,
+        "inboxCount": 1,
+        "payloadHash": "2aebb0447e3ba5e724e7b561a33ae6093f2b6746528a9d3d9b4d297ed8311951",
+        "outboxStatus": "DONE",
+        "deliveryToken": 1,
+        "deliveryStatus": "COMPLETED",
+        "publishAttempts": 7,
+        "businessAttempts": 1,
+        "duplicateAckCount": 1,
+        "maxAckDeliveryAttempt": 2
+      },
+      "money": {
+        "status": "COMPLETED",
+        "orderNo": "f4d49d57-1392-4a26-a925-42bf762e371f",
+        "billCount": 1,
+        "capturedFen": 10000,
+        "refundCount": 1,
+        "captureCount": 1,
+        "sessionCount": 1,
+        "refundSuccessFen": 7400,
+        "refundReservedFen": 0,
+        "channelCaptureCount": 1,
+        "channelRefundCount": 1
+      }
+    },
+    {
+      "case": "A42",
+      "name": "boundedRetryBrokerDlqAndAuditedSameEventReplay",
+      "status": "PASS",
+      "eventId": "1c6fb792-ff82-476c-9c47-4b9c403a061f",
+      "dead": {
+        "eventId": "1c6fb792-ff82-476c-9c47-4b9c403a061f",
+        "ackCount": 0,
+        "inboxCount": 0,
+        "payloadHash": "7c33dc93a960c3070e5b79401014891370f5a7af92de43c07654e8cd137ec2eb",
+        "outboxStatus": "DEAD",
+        "deliveryToken": 3,
+        "deliveryStatus": "DEAD",
+        "publishAttempts": 1,
+        "businessAttempts": 3,
+        "duplicateAckCount": 0,
+        "maxAckDeliveryAttempt": null
+      },
+      "brokerDlq": {
+        "messageIds": [
+          "0122A95816CCA300010AE796DE00000023"
+        ],
+        "topic": "%DLQ%chargehub-workflow-v1",
+        "querySucceeded": true
+      },
+      "adminVisible": true,
+      "audit": {
+        "count": 1,
+        "operatorId": 5
+      },
+      "after": {
+        "eventId": "1c6fb792-ff82-476c-9c47-4b9c403a061f",
+        "ackCount": 1,
+        "inboxCount": 1,
+        "payloadHash": "7c33dc93a960c3070e5b79401014891370f5a7af92de43c07654e8cd137ec2eb",
+        "outboxStatus": "DONE",
+        "deliveryToken": 5,
+        "deliveryStatus": "COMPLETED",
+        "publishAttempts": 1,
+        "businessAttempts": 1,
+        "duplicateAckCount": 0,
+        "maxAckDeliveryAttempt": 1
+      },
+      "money": {
+        "status": "COMPLETED",
+        "orderNo": "92db06fd-25fb-4ed1-bac6-87cab7b32fb4",
+        "billCount": 1,
+        "capturedFen": 10000,
+        "refundCount": 1,
+        "captureCount": 1,
+        "sessionCount": 1,
+        "refundSuccessFen": 7900,
+        "refundReservedFen": 0,
+        "channelCaptureCount": 1,
+        "channelRefundCount": 1
+      }
+    }
+  ],
+  "status": "PASS",
+  "finishedAt": "2026-10-19T11:21:31.817132+00:00",
+  "nativeSmoke": {
+    "nativeClient": "5.2.2",
+    "broker": "5.5.0",
+    "topic": "ChargeHubSmoke",
+    "eventKey": "92dd5b44-a54f-46ad-9c10-7940955cdba4",
+    "brokerMessageId": "0126D5BD75BED100010AE7954B00000000",
+    "deliveryAttempt": 1,
+    "bodyVerified": true,
+    "acknowledged": true,
+    "executedAt": "2026-10-19T11:13:15.953181+00:00",
+    "brokerImage": "apache/rocketmq:5.5.0@sha256:7e8f6c9dbd9df742ed26ba69c00d4ad69e2f86a56f3ca7782ff8144dd0798132",
+    "clientSha256": "71dfe1c545b207a3016919a52be1ab984c385ea94cb8fd622c4e252b5cba37e5",
+    "officialExampleCommit": "6e2185bb638b639663bda240cf119804a595e099"
+  },
+  "schemaVersion": 1,
+  "candidateGitSha": "a212a8b4ffb91444c1170478995786c1f2780d02",
+  "businessJavaCandidateGitSha": "302507165a4496ded25ac6ff0505a93869bec47c",
+  "applicationImageId": "sha256:52bdaff20c1a57f6c0e518c5592779d64a31b202cf80d8a9ff36932dddc082a2",
+  "applicationImageEvidence": "Actual deployed image confirmed by orchestration owner; image build recorded in .local/candidate-a212a8b-build.log",
+  "sourceReportPath": ".local/reports/mq.json",
+  "sourceReportSha256": "0657282b2e6b735fcbc21f04e83152852fae483fcd20e73ee6c05e907445786c",
+  "privateLogsCopied": false,
+  "privateWorkerLogCount": 11,
+  "scope": "Real local Docker RocketMQ5.5.0, native Java client5.2.2, MySQL8.4, external SIGKILL, independent simulated payment/device; not a live payment institution.",
+  "environmentIncident": {
+    "type": "BROKER_DISK_HIGH_WATERMARK",
+    "brokerObservedMessage": "message store is not writeable, so putMessage is forbidden 16",
+    "sourceEvidencePath": ".local/reports/mq-broker-disk.log",
+    "effect": "Broker temporarily rejected publication during this same uninterrupted fault run; original payment creation and A41 second-window events succeeded on publication attempt 7.",
+    "recovery": "Disk space was released. Original Outbox events retried automatically; no payload, financial fact, attempt count or Broker protection threshold was reset.",
+    "retainedA41PublicationAttempts": 7
+  }
+}

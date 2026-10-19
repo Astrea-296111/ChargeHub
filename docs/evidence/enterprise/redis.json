@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "executedAt": "2026-10-19T11:12:24.970753+00:00",
+  "candidate": "a212a8b4ffb91444c1170478995786c1f2780d02",
+  "project": "chargehub",
+  "simulated": true,
+  "checks": [
+    {
+      "check": "Actual main development Redis FLUSHDB and real HTTP reload",
+      "result": "PASS"
+    },
+    {
+      "check": "Actual Redis process stopped; authenticated HTTP uses MySQL fallback",
+      "result": "PASS",
+      "elapsedSeconds": 0.1809
+    },
+    {
+      "check": "Restarted Redis and repopulated display cache",
+      "result": "PASS",
+      "keys": 2
+    }
+  ],
+  "responseSha256": "0c8ebba6176597adca8fb8d24c587ba3d58dceef6d6591f62f7aca067d43189f",
+  "scope": "Reversible cache outage on this task development stack; no MySQL/payment/device facts were cleared. Transactional correctness independently verified in MySQL suites."
+}

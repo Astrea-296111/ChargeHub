@@ -55,6 +55,8 @@ sequenceDiagram
 
 管理员通过现有 `POST /v1/admin/outbox/{eventId}/replay` 提交原因。API 和 Worker 都应配置 `mode=rocketmq`；重放事务重置 DEAD 消费任务并提升 token，保留原 eventId、载荷和 hash。重新发送会得到新的 Broker messageId，逻辑 eventId 保持不变。历史 Broker DLQ 和操作审计保留，不通过修改现金、账单或消息原文“修复”任务。
 
+这不是 Broker 故障时自动切换数据库消费的双通道方案。切回 `db` 前应暂停新业务意图，保留外部事实收件和必要恢复，等待 `PUBLISHED` 与运行中消费排空，并核对未完成/死信任务；数据库 Worker 不会私自领取 Broker 已接受的 `PUBLISHED` 记录。API 与 Worker 的模式配置必须一致。
+
 ## 开发部署与故障入口
 
 ```bash
@@ -66,6 +68,8 @@ python3 scripts/mq-faults.py
 `compose-mq.yaml` 提供 NameServer、Broker 与 LOCAL Proxy、显式 Topic/消费组初始化；只有专属卷初始化任务以 root 为 UID 3000 准备卷目录，Broker 始终以镜像的非 root 用户运行。Broker 配置 `SYNC_FLUSH`，本地模式不提供副本容灾。开发 gRPC 明文传输仅用于私有 Compose 网络；应用客户端默认启用 TLS，真实部署须配置可验证的 TLS、身份凭据、网络边界、配额和多节点容灾。
 
 故障脚本需要最新应用镜像、V7/V8、完整 MQ 拓扑和一次已完成退款的正常演示。它会暂停普通 Worker，创建专用 fault Worker，在实际 barrier 被数据库观察到后执行外部 `docker kill --signal=KILL`，最后恢复原 Worker 数量。不得与其他修改模拟器故障配置的验收并发执行。
+
+运行前应为 Broker 存储和容器层保留足够磁盘空间，尤其是采用 Docker `vfs` 存储驱动时。磁盘高水位会使 Broker 拒绝写入，应用保留原 Outbox 并退避重试；释放空间后继续观察原事件，不降低 Broker 磁盘保护阈值，也不改写资金事实。故障报告中的发布重试次数应如实保留这类环境中断，不能只凭容器健康判定消息已发布。
 
 | 场景 | 脚本实际验证内容 |
 | --- | --- |
