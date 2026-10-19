@@ -78,6 +78,10 @@ class FaultDriver:
         if not name:return
         if kill:self.run(['docker','kill','--signal=KILL',name])
         else:self.run(['docker','stop','--time','5',name],check=False)
+        logs=self.run(['docker','logs','--tail','1000',name],check=False)
+        log_dir=ROOT/'.local/reports/mq-workers';log_dir.mkdir(parents=True,exist_ok=True)
+        log_path=log_dir/(name+'.log');log_path.write_text(logs.stdout+logs.stderr);log_path.chmod(0o600)
+        self.report.setdefault('workerLogs',[]).append(str(log_path.relative_to(ROOT)))
         self.run(['docker','rm','-f',name],check=False)
         if name in self.containers:self.containers.remove(name)
 
@@ -144,8 +148,13 @@ class FaultDriver:
         username=self.prefix+'-u-'+uuid.uuid4().hex[:5]
         self.sql("INSERT INTO iam_user(login_name,password_hash) SELECT "+literal(username)+",password_hash FROM iam_user WHERE login_name='customer'; INSERT INTO iam_user_role(user_id,role_code) SELECT id,'CUSTOMER' FROM iam_user WHERE login_name="+literal(username)+';')
         client=Client(self.args.api);client.login(username,self.env['CHARGEHUB_DEMO_PASSWORD'])
-        available=available_connectors(client);expect(bool(available),'No idle connector for the fresh A41 transaction')
-        station,connector=available[0]
+        available=available_connectors(client);selected=None
+        for station,connector in available:
+            quote=client.call('/v1/charge-quotes',{'connectorId':connector['connectorId'],'estimatedEnergyWh':20000,'useMembership':False})
+            if 0<quote['amounts']['payableFen']<10000:
+                selected=(station,connector);break
+        expect(selected is not None,'A41 requires an idle connector whose 20kWh quote leaves a positive balance refund')
+        station,connector=selected
         order=client.call('/v1/charge-orders',{'connectorId':connector['connectorId'],'expectedTariffVersion':station['tariffVersion'],'useMembership':False})
         payment=client.call('/v1/charge-orders/'+order['orderNo']+'/payment',{})
         wait_for('real channel trade creation',lambda:self.gateway.call('/dev/payments/'+payment['payNo']+'/capture',{}),lambda value:value.get('status')=='SUCCESS',timeout=self.args.timeout)

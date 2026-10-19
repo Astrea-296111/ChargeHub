@@ -21,7 +21,7 @@ services:
       MONITOR_PASSWORD_FILE: /run/secrets/monitor_password
     secrets: [monitor_password]
     read_only: true
-    tmpfs: [/tmp:size=8m,noexec,nosuid]
+    tmpfs: ["/tmp:size=8m,noexec,nosuid"]
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     cpus: 0.2
@@ -36,7 +36,7 @@ services:
       - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
       - prometheus-data:/prometheus
     read_only: true
-    tmpfs: [/tmp:size=16m,noexec,nosuid]
+    tmpfs: ["/tmp:size=16m,noexec,nosuid"]
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     cpus: 0.5

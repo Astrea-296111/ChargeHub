@@ -7,7 +7,7 @@ x-app-env: &app-env
   CHARGEHUB_PAYMENT_KEY: ${ROLLBACK_PAYMENT_KEY:?required}
   CHARGEHUB_DEVICE_KEY: ${ROLLBACK_DEVICE_KEY:?required}
   CHARGEHUB_CONTROL_KEY: ${ROLLBACK_CONTROL_KEY:?required}
-  CHARGEHUB_FIXED_TIME: 2026-10-18T07:00:00Z
+  CHARGEHUB_FIXED_TIME: "2026-10-18T07:00:00Z"
   CHARGEHUB_PAYMENT_URL: http://gateway:18081
   CHARGEHUB_DEVICE_URL: http://device:18082
   CHARGEHUB_CALLBACK_URL: http://api:8080
@@ -37,7 +37,7 @@ services:
       CHARGEHUB_PAYMENT_KEY: ${ROLLBACK_PAYMENT_KEY:?required}
       CHARGEHUB_DEVICE_KEY: ${ROLLBACK_DEVICE_KEY:?required}
       CHARGEHUB_CONTROL_KEY: ${ROLLBACK_CONTROL_KEY:?required}
-      CHARGEHUB_FIXED_TIME: 2026-10-18T07:00:00Z
+      CHARGEHUB_FIXED_TIME: "2026-10-18T07:00:00Z"
       CHARGEHUB_CALLBACK_URL: http://api:8080
       PAYMENT_DB: /data/payment.sqlite3
       DEVICE_DB: /data/device.sqlite3
@@ -55,7 +55,7 @@ services:
     depends_on:
       mysql: {condition: service_healthy}
     read_only: true
-    tmpfs: [/tmp:size=128m,noexec,nosuid]
+    tmpfs: ["/tmp:size=128m,noexec,nosuid"]
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
   client:

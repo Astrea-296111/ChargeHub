@@ -11,7 +11,7 @@ x-app: &app
     CHARGEHUB_PAYMENT_KEY: ${PERF_PAYMENT_KEY:?required}
     CHARGEHUB_DEVICE_KEY: ${PERF_DEVICE_KEY:?required}
     CHARGEHUB_CONTROL_KEY: ${PERF_CONTROL_KEY:?required}
-    CHARGEHUB_FIXED_TIME: 2026-10-18T07:00:00Z
+    CHARGEHUB_FIXED_TIME: "2026-10-18T07:00:00Z"
     CHARGEHUB_PAYMENT_URL: http://gateway:18081
     CHARGEHUB_DEVICE_URL: http://device:18082
     CHARGEHUB_CALLBACK_URL: http://api:8080
@@ -30,7 +30,7 @@ x-app: &app
     gateway: {condition: service_healthy}
     device: {condition: service_healthy}
   read_only: true
-  tmpfs: [/tmp:size=128m,noexec,nosuid]
+  tmpfs: ["/tmp:size=128m,noexec,nosuid"]
   cap_drop: [ALL]
   security_opt: [no-new-privileges:true]
 services:
@@ -63,7 +63,7 @@ services:
       CHARGEHUB_PAYMENT_KEY: ${PERF_PAYMENT_KEY:?required}
       CHARGEHUB_DEVICE_KEY: ${PERF_DEVICE_KEY:?required}
       CHARGEHUB_CONTROL_KEY: ${PERF_CONTROL_KEY:?required}
-      CHARGEHUB_FIXED_TIME: 2026-10-18T07:00:00Z
+      CHARGEHUB_FIXED_TIME: "2026-10-18T07:00:00Z"
       CHARGEHUB_CALLBACK_URL: http://api:8080
       PAYMENT_DB: /data/payment.sqlite3
       DEVICE_DB: /data/device.sqlite3
@@ -116,7 +116,7 @@ services:
       - ./scripts/performance:/suite:ro
       - ./.local/performance/${PERF_RUN_ID:?required}/:/reports
     read_only: true
-    tmpfs: [/tmp:size=32m,noexec,nosuid]
+    tmpfs: ["/tmp:size=32m,noexec,nosuid"]
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     cpus: 0.75

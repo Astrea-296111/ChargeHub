@@ -149,6 +149,8 @@ def main():
         report['result']='PASS'
     except Exception as exception:
         report['result']='FAIL';report['failure']=type(exception).__name__+': '+str(exception)
+        if isinstance(exception,subprocess.CalledProcessError):
+            (directory/'failure-private.log').write_text((exception.stdout or '')+(exception.stderr or ''))
         # Container logs are deliberately not copied: they can include private data.
     finally:
         report['endedAt']=datetime.now(timezone.utc).isoformat()

@@ -24,10 +24,10 @@ LABEL org.opencontainers.image.title="ChargeHub" \
       org.opencontainers.image.source="https://github.com/Astrea-296111/ChargeHub" \
       org.opencontainers.image.revision="${VCS_REF}"
 COPY --from=build --chmod=0444 /src/chargehub-app/target/chargehub-app-1.0.0-SNAPSHOT.jar /app/chargehub.jar
-COPY --from=build --chmod=0444 /probe/Healthcheck.class /app/probe/Healthcheck.class
+COPY --from=build --chmod=0444 /probe/Healthcheck.class /app/Healthcheck.class
 ENV MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED=true
 USER 10001:10001
 EXPOSE 8080
 HEALTHCHECK --interval=20s --timeout=5s --start-period=60s --retries=3 \
-    CMD ["java", "-Xms8m", "-Xmx32m", "-cp", "/app/probe", "Healthcheck"]
+    CMD ["java", "-Xms8m", "-Xmx32m", "-cp", "/app", "Healthcheck"]
 ENTRYPOINT ["java","-XX:MaxRAMPercentage=65","-Duser.timezone=UTC","-jar","/app/chargehub.jar"]
