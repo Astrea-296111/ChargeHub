@@ -88,7 +88,9 @@ class Store:
         allowed = {'dropResponseAfterCommit', 'dropNotification', 'duplicateNotificationCount',
                    'notificationDelayMs', 'deviceStartTimeoutButRunning', 'deviceStopAckLost',
                    'meterReorderWindow', 'dropBoundarySample', 'injectMeterRollback',
-                   'temporaryFailure', 'rejectRefund', 'randomSeed'}
+                   'temporaryFailure', 'rejectRefund', 'randomSeed', 'deviceStartRejected',
+                   'deviceQueryUnknown', 'dropMeterSeqNos', 'refundRetryableFailure',
+                   'badPaymentNotificationAmountFen', 'badPaymentNotificationCurrency'}
         if set(values) - allowed:
             raise Fault(400, 'INVALID_FAULT', 'Unknown fault setting')
         # Bound developer inputs so delayed threads and duplicate sends cannot exhaust the host.
@@ -97,6 +99,21 @@ class Store:
                 raise Fault(400, 'INVALID_FAULT', name + ' must be 0..20')
         if 'notificationDelayMs' in values and (type(values['notificationDelayMs']) is not int or not 0 <= values['notificationDelayMs'] <= 60000):
             raise Fault(400, 'INVALID_FAULT', 'notificationDelayMs must be 0..60000')
+        for name in ('dropResponseAfterCommit', 'dropNotification', 'deviceStartTimeoutButRunning',
+                     'deviceStopAckLost', 'dropBoundarySample', 'injectMeterRollback', 'temporaryFailure',
+                     'rejectRefund', 'deviceStartRejected', 'deviceQueryUnknown', 'refundRetryableFailure'):
+            if name in values and type(values[name]) is not bool:
+                raise Fault(400, 'INVALID_FAULT', name + ' must be a boolean')
+        if 'dropMeterSeqNos' in values and (not isinstance(values['dropMeterSeqNos'], list)
+                or len(values['dropMeterSeqNos']) > 1000
+                or any(type(seq) is not int or seq < 0 for seq in values['dropMeterSeqNos'])):
+            raise Fault(400, 'INVALID_FAULT', 'dropMeterSeqNos must contain at most 1000 nonnegative integers')
+        if 'badPaymentNotificationAmountFen' in values and (type(values['badPaymentNotificationAmountFen']) is not int
+                or not 0 <= values['badPaymentNotificationAmountFen'] <= 1000000):
+            raise Fault(400, 'INVALID_FAULT', 'badPaymentNotificationAmountFen must be 0..1000000')
+        if 'badPaymentNotificationCurrency' in values and (not isinstance(values['badPaymentNotificationCurrency'], str)
+                or values['badPaymentNotificationCurrency'] not in ('', 'CNY', 'USD', 'EUR')):
+            raise Fault(400, 'INVALID_FAULT', 'badPaymentNotificationCurrency must be a supported three-letter code or empty')
         with self.tx() as db:
             old = db.execute("SELECT value FROM settings WHERE name='faults'").fetchone()
             merged = json.loads(old['value']) if old else {}

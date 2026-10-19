@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -50,9 +51,11 @@ public class SessionService {
         String hash = Json.hash(Json.write(new TreeMap<>(event)));
         if (previous != null) {
             if (!hash.equals(Db.str(previous, "payload_hash"))) {
+                db.update("INSERT INTO device_event_conflict(original_event_id,payload_hash,payload) VALUES(?,?,?) ON DUPLICATE KEY UPDATE id=id",
+                        Db.num(previous, "id"), hash, Json.write(event));
                 db.update("UPDATE device_event SET process_status='REVIEW',error_code='EVENT_ID_CONFLICT' WHERE id=?", Db.num(previous, "id"));
                 db.insert("INSERT INTO ops_audit(operator_id,action,target_type,target_no,reason,before_json,after_json,request_id) VALUES(0,'DEVICE_EVENT_CONFLICT','DeviceEvent',?,'同一设备事件号携带不同内容',?,?,?)",
-                        value.eventId, Db.str(previous, "payload"), Json.write(event), UUID.randomUUID().toString());
+                        value.eventId, Db.str(previous, "payload"), Json.write(event), com.chargehub.infrastructure.ApiResponse.requestIdValue());
                 // A forged event for another session cannot change that session's business state.
                 var originalSession = db.one("SELECT order_no FROM charge_session WHERE session_no=?", Db.str(previous, "session_no"));
                 if (originalSession != null && order != null && Objects.equals(Db.str(originalSession, "order_no"), Db.str(order, "order_no"))) {
@@ -72,8 +75,8 @@ public class SessionService {
         }
         if (value.type.equals("STATUS")) {
             // IDLE alone is not an authoritative end-of-session fact and never releases a binding.
-            db.update("UPDATE connector SET last_seen_at=?,status=CASE WHEN active_order_no IS NULL THEN ? ELSE status END WHERE id=?",
-                    clock.instant(), value.deviceStatus, value.connectorId);
+            db.update("UPDATE connector SET last_seen_at=?,reported_device_status=CASE WHEN reported_status_at IS NULL OR reported_status_at<=? THEN ? ELSE reported_device_status END,status=CASE WHEN active_order_no IS NULL AND (reported_status_at IS NULL OR reported_status_at<=?) THEN ? ELSE status END,reported_status_at=CASE WHEN reported_status_at IS NULL OR reported_status_at<=? THEN ? ELSE reported_status_at END WHERE id=?",
+                    clock.instant(), value.at, value.deviceStatus, value.at, value.deviceStatus, value.at, value.at, value.connectorId);
             processed(eventId);
             return;
         }
@@ -83,6 +86,14 @@ public class SessionService {
         }
         db.update("UPDATE connector SET last_seen_at=? WHERE id=?", clock.instant(), value.connectorId);
         String orderNo = Db.str(order, "order_no");
+        if (value.type.equals("STOPPED")) {
+            // Physical termination is distinct from whether its meter reading can be billed.
+            db.update("UPDATE charge_session SET status='STOPPED',stop_confirmed_at=COALESCE(stop_confirmed_at,?),stop_confirmed_event_id=COALESCE(stop_confirmed_event_id,?),final_seq=COALESCE(final_seq,?),end_meter_wh=COALESCE(end_meter_wh,?),ended_at=COALESCE(ended_at,?) WHERE id=?",
+                    value.at, eventId, value.finalSeq, value.wh, value.at, Db.num(session, "id"));
+            db.update("UPDATE charge_order SET ended_at=COALESCE(ended_at,?) WHERE order_no=?", value.at, orderNo);
+            session = db.one("SELECT * FROM charge_session WHERE session_no=?", value.sessionNo);
+            releaseConnector(order, session);
+        }
         var sample = db.one("SELECT * FROM meter_sample WHERE session_no=? AND seq_no=?", value.sessionNo, value.seq);
         if (sample != null) {
             if (value.wh != Db.num(sample, "meter_wh") || !value.at.equals(Db.instant(sample, "sampled_at"))
@@ -121,10 +132,10 @@ public class SessionService {
                     value.wh, value.at, Db.num(session, "id"));
             String state = Db.str(order, "status");
             if (Set.of("CANCELING", "CANCELED").contains(state)) {
-                db.update("UPDATE charge_order SET status='EXCEPTION',exception_code='UNEXPECTED_START',started_at=?,version=version+1 WHERE order_no=?", value.at, orderNo);
+                db.update("UPDATE charge_order SET status='EXCEPTION',exception_code=CASE WHEN financial_status IN ('DIFF','SHORTFALL') AND exception_code IS NOT NULL THEN exception_code ELSE 'UNEXPECTED_START' END,started_at=?,version=version+1 WHERE order_no=?", value.at, orderNo);
                 requestStop(order, session);
             } else if (session.get("final_seq") == null && Set.of("START_PENDING", "EXCEPTION").contains(state)) {
-                db.update("UPDATE charge_order SET status='CHARGING',started_at=?,exception_code=NULL,version=version+1 WHERE order_no=?", value.at, orderNo);
+                db.update("UPDATE charge_order SET status='CHARGING',started_at=?,exception_code=CASE WHEN financial_status IN ('DIFF','SHORTFALL') THEN exception_code ELSE NULL END,version=version+1 WHERE order_no=?", value.at, orderNo);
                 db.update("UPDATE connector SET status='CHARGING' WHERE id=? AND active_order_no=?", value.connectorId, orderNo);
             } else {
                 db.update("UPDATE charge_order SET started_at=COALESCE(started_at,?) WHERE order_no=?", value.at, orderNo);
@@ -150,11 +161,13 @@ public class SessionService {
     private void anomaly(long eventId, Map<String, Object> order, String code) {
         db.update("UPDATE device_event SET process_status='REVIEW',error_code=? WHERE id=?", code, eventId);
         reviewOrder(order, code);
+        var session = db.one("SELECT * FROM charge_session WHERE order_no=?", Db.str(order, "order_no"));
+        releaseConfirmedResources(order, session);
     }
 
     private void reviewOrder(Map<String, Object> order, String code) {
         // Anomalies can never rewrite an issued bill or silently reopen its financial lifecycle.
-        db.update("UPDATE charge_order SET status=CASE WHEN status IN ('COMPLETED','CANCELED') THEN status ELSE 'REVIEW' END,exception_code=?,version=version+1 WHERE order_no=?",
+        db.update("UPDATE charge_order SET status=CASE WHEN status IN ('COMPLETED','CANCELED') THEN status ELSE 'REVIEW' END,exception_code=CASE WHEN financial_status IN ('DIFF','SHORTFALL') AND exception_code IS NOT NULL THEN exception_code ELSE ? END,version=version+1 WHERE order_no=?",
                 code, Db.str(order, "order_no"));
     }
 
@@ -209,7 +222,9 @@ public class SessionService {
             reason = "PREPAID_METER_UNCERTAIN";
         }
         String originalReason = Db.str(order, "exception_code");
-        String visibleReason = Set.of("REVIEW", "EXCEPTION").contains(Db.str(order, "status")) && originalReason != null ? originalReason : reason;
+        boolean keepReason = Set.of("REVIEW", "EXCEPTION").contains(Db.str(order, "status"))
+                || Set.of("DIFF", "SHORTFALL").contains(Objects.toString(Db.str(order, "financial_status"), ""));
+        String visibleReason = keepReason && originalReason != null ? originalReason : reason;
         db.update("UPDATE charge_order SET status='STOP_PENDING',exception_code=?,version=version+1 WHERE order_no=?", visibleReason, orderNo);
         requestStop(order, session);
     }
@@ -225,18 +240,19 @@ public class SessionService {
     private void finalizeLocked(Map<String, Object> order, Map<String, Object> session) {
         if (session == null || !"STOPPED".equals(Db.str(session, "status"))) return;
         String orderNo = Db.str(order, "order_no");
+        releaseConfirmedResources(order, session);
         if (db.one("SELECT id FROM charge_bill WHERE order_no=?", orderNo) != null) return;
-        if (db.one("SELECT id FROM device_event WHERE session_no=? AND process_status='REVIEW' LIMIT 1", Db.str(session, "session_no")) != null) {
+        if (!unresolvedReviews(session).isEmpty()) {
             reviewOrder(order, "METER_REVIEW_REQUIRED"); return;
         }
         List<BillSegment> segments;
         try {
-            var samples = db.rows("SELECT * FROM meter_sample WHERE session_no=? ORDER BY seq_no", Db.str(session, "session_no"));
+            var samples = effectiveSamples(session);
             if (session.get("final_seq") == null || Db.num(session, "final_seq") != (long) samples.size() - 1) {
                 throw new MeteringProblem("MISSING_SEQUENCE");
             }
             segments = segments(Json.read(Db.str(order, "tariff_snapshot")), samples);
-            if (Db.num(session, "end_meter_wh") != Db.num(samples.getLast(), "meter_wh")) throw new MeteringProblem("END_METER_CONFLICT");
+            if (!Boolean.TRUE.equals(samples.getLast().get("review_selected")) && Db.num(session, "end_meter_wh") != Db.num(samples.getLast(), "meter_wh")) throw new MeteringProblem("END_METER_CONFLICT");
         } catch (MeteringProblem problem) {
             reviewOrder(order, problem.code); return;
         } catch (BusinessException | DateTimeException problem) {
@@ -267,18 +283,84 @@ public class SessionService {
                     BillingCalculator.componentFen(segment.wh, segment.energyRate), BillingCalculator.componentFen(segment.wh, segment.serviceRate));
         }
         benefits.finalizeReservation(orderNo, result.memberDiscountFen(), result.couponDiscountFen());
-        String financial = refundContradiction ? "DIFF" : result.shortfallFen() > 0 ? "SHORTFALL" : result.refundFen() > 0 ? "REFUNDING" : "CLOSED";
+        var previousFinancial = db.one("SELECT financial_status,exception_code FROM charge_order WHERE order_no=?", orderNo);
+        if (previousFinancial == null) previousFinancial = order;
+        boolean preserveDifference = Set.of("DIFF", "SHORTFALL").contains(Objects.toString(Db.str(previousFinancial, "financial_status"), ""));
+        String financial = preserveDifference ? Db.str(previousFinancial, "financial_status") : refundContradiction ? "DIFF" : result.shortfallFen() > 0 ? "SHORTFALL" : result.refundFen() > 0 ? "REFUNDING" : "CLOSED";
+        String exception = preserveDifference ? Db.str(previousFinancial, "exception_code") : refundContradiction ? "REFUND_SERVICE_CONTRADICTION" : result.shortfallFen() > 0 ? "PREPAID_SHORTFALL" : null;
         db.update("UPDATE charge_order SET status=?,financial_status=?,exception_code=?,version=version+1 WHERE order_no=?",
                 result.totalWh() == 0 ? "CANCELED" : "COMPLETED", financial,
-                refundContradiction ? "REFUND_SERVICE_CONTRADICTION" : result.shortfallFen() > 0 ? "PREPAID_SHORTFALL" : null, orderNo);
+                exception, orderNo);
         if (result.refundFen() > 0 && !refundContradiction) {
             var refund = payments.ensureRefund(orderNo, result.refundFen(), result.totalWh() == 0 ? "FULL_CANCEL" : "BALANCE");
             outbox.enqueue("RefundRequested", Db.str(refund, "refund_no"), Map.of("refundNo", Db.str(refund, "refund_no"), "orderNo", orderNo));
         }
         outbox.enqueue("BillFinalized", orderNo, Map.of("orderNo", orderNo, "billNo", billNo, "payableFen", result.payableFen(), "refundFen", result.refundFen()));
         // The STOPPED event has proved the session ended. Conditional updates preserve newer bindings.
-        db.update("UPDATE connector SET active_order_no=NULL,status='IDLE',version=version+1 WHERE id=? AND active_order_no=?", Db.num(order, "connector_id"), orderNo);
-        db.update("UPDATE iam_user SET active_order_no=NULL WHERE id=? AND active_order_no=?", Db.num(order, "user_id"), orderNo);
+        releaseConnector(order, session);
+        if (!Set.of("DIFF", "SHORTFALL").contains(financial)) db.update("UPDATE iam_user SET active_order_no=NULL WHERE id=? AND active_order_no=?", Db.num(order, "user_id"), orderNo);
+    }
+
+    private void releaseConnector(Map<String, Object> order, Map<String, Object> session) {
+        if (session == null || !"STOPPED".equals(Db.str(session, "status"))) return;
+        db.update("UPDATE connector SET active_order_no=NULL,status=CASE WHEN reported_device_status IN ('FAULT','OFFLINE') THEN reported_device_status ELSE 'IDLE' END,version=version+1 WHERE id=? AND active_order_no=?",
+                Db.num(order, "connector_id"), Db.str(order, "order_no"));
+    }
+
+    /** Free ended physical resources independently of REVIEW, but never certify an unknown debt. */
+    private void releaseConfirmedResources(Map<String, Object> order, Map<String, Object> session) {
+        if (session == null || !"STOPPED".equals(Db.str(session, "status"))) return;
+        releaseConnector(order, session);
+        if (!unresolvedReviews(session).isEmpty()) return;
+        if (db.one("SELECT id FROM charge_order WHERE user_id=? AND financial_status IN ('DIFF','SHORTFALL') LIMIT 1", Db.num(order, "user_id")) != null) return;
+        try {
+            var samples = effectiveSamples(session);
+            if (samples.size() < 2 || Db.num(samples.getFirst(), "seq_no") != 0
+                    || session.get("final_seq") == null || Db.num(samples.getLast(), "seq_no") != Db.num(session, "final_seq")) return;
+            var first = samples.getFirst(); var last = samples.getLast();
+            if (!"START".equals(Db.str(first, "sample_kind")) || !"END".equals(Db.str(last, "sample_kind"))) return;
+            Instant start = Db.instant(first, "sampled_at"), end = Db.instant(last, "sampled_at");
+            long wh = Math.subtractExact(Db.num(last, "meter_wh"), Db.num(first, "meter_wh"));
+            if (wh < 0 || end.isBefore(start)) return;
+            var tariff = Json.read(Db.str(order, "tariff_snapshot"));
+            var slots = TariffRules.canonicalSlots(tariff.get("slots"), true);
+            int maxEnergy = slots.stream().mapToInt(s -> ((Number) s.get("energyRateFenPerKwh")).intValue()).max().orElseThrow();
+            int maxService = slots.stream().mapToInt(s -> ((Number) s.get("serviceRateFenPerKwh")).intValue()).max().orElseThrow();
+            // Independent per-component ceilings plus a generous per-boundary rounding allowance.
+            long maxSegments = Math.addExact(Math.multiplyExact(Duration.between(start, end).toDays() + 2, slots.size()), 1);
+            long upper = Math.addExact(BigDecimal.valueOf(wh).multiply(BigDecimal.valueOf(maxEnergy + (long) maxService))
+                    .divide(BigDecimal.valueOf(1000), 0, RoundingMode.CEILING).longValueExact(), Math.multiplyExact(maxSegments, 2));
+            var payment = db.one("SELECT captured_fen,refund_reserved_fen,refund_success_fen FROM payment_order WHERE order_no=?", Db.str(order, "order_no"));
+            long available = Db.num(payment, "captured_fen") - Db.num(payment, "refund_reserved_fen") - Db.num(payment, "refund_success_fen");
+            if (upper <= available) db.update("UPDATE iam_user SET active_order_no=NULL WHERE id=? AND active_order_no=?", Db.num(order, "user_id"), Db.str(order, "order_no"));
+        } catch (MeteringProblem | BusinessException | DateTimeException | ArithmeticException | IllegalArgumentException ignored) {
+            // A failed safety bound retains the user's binding; it never invents a financial amount.
+        }
+    }
+
+    List<Map<String, Object>> unresolvedReviews(Map<String, Object> session) {
+        return db.rows("SELECT e.* FROM device_event e WHERE e.session_no=? AND e.device_id=? AND e.process_status='REVIEW' AND e.error_code IN ('EVENT_ID_CONFLICT','SEQUENCE_CONFLICT','METER_ROLLBACK_OR_TIME_CONFLICT','FINAL_SEQUENCE_CONFLICT','SEQUENCE_AFTER_END','LATE_SAMPLE_AFTER_BILL') AND NOT EXISTS (SELECT 1 FROM meter_review_selection s WHERE s.session_no=e.session_no AND s.seq_no=e.seq_no AND s.covered_through_event_id>=e.id AND NOT EXISTS(SELECT 1 FROM device_event_conflict c WHERE c.original_event_id=e.id AND c.id>s.covered_through_conflict_id)) ORDER BY e.id",
+                Db.str(session, "session_no"), Db.str(session, "device_id"));
+    }
+
+    List<Map<String, Object>> effectiveSamples(Map<String, Object> session) {
+        var samples = new TreeMap<Long, Map<String, Object>>();
+        for (var sample : db.rows("SELECT * FROM meter_sample WHERE session_no=? ORDER BY seq_no", Db.str(session, "session_no"))) samples.put(Db.num(sample, "seq_no"), sample);
+        for (var selection : db.rows("SELECT s.*,e.payload,e.payload_hash FROM meter_review_selection s JOIN device_event e ON e.id=s.selected_event_id WHERE s.session_no=? ORDER BY s.seq_no,s.id", Db.str(session, "session_no"))) {
+            if (!Objects.equals(Db.str(selection, "selected_payload_hash"), Db.str(selection, "payload_hash"))) throw new MeteringProblem("REVIEW_EVIDENCE_CHANGED");
+            var selected = evidenceSample(Json.read(Db.str(selection, "payload")), session);
+            selected.put("review_selected", true); samples.put(Db.num(selected, "seq_no"), selected);
+        }
+        return new ArrayList<>(samples.values());
+    }
+
+    static Map<String, Object> evidenceSample(Map<String, Object> payload, Map<String, Object> session) {
+        var event = Event.parse(payload);
+        if (event.sessionNo == null || !event.sessionNo.equals(Db.str(session, "session_no"))
+                || !event.deviceId.equals(Db.str(session, "device_id")) || event.connectorId != Db.num(session, "connector_id") || event.type.equals("STATUS")) {
+            throw new BusinessException(409, "INVALID_METER_EVIDENCE", "原始设备事件不属于目标会话");
+        }
+        return new HashMap<>(Map.of("seq_no", event.seq, "meter_wh", event.wh, "sampled_at", event.at, "sample_kind", event.kind));
     }
 
     @Transactional(readOnly = true)

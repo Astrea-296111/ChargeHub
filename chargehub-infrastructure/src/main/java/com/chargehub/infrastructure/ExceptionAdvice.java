@@ -25,9 +25,19 @@ public class ExceptionAdvice {
             org.springframework.web.bind.MissingRequestHeaderException.class,
             org.springframework.web.bind.MissingServletRequestParameterException.class,
             org.springframework.web.multipart.support.MissingServletRequestPartException.class,
-            org.springframework.web.bind.ServletRequestBindingException.class})
+            org.springframework.web.bind.ServletRequestBindingException.class,
+            jakarta.validation.ConstraintViolationException.class,
+            org.springframework.web.method.annotation.HandlerMethodValidationException.class})
     ResponseEntity<ApiResponse> invalid(Exception e) {
         return ResponseEntity.badRequest().body(ApiResponse.error("INVALID_REQUEST", "请求字段或格式不正确"));
+    }
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    ResponseEntity<ApiResponse> tooLarge(Exception e) {
+        return ResponseEntity.status(413).body(ApiResponse.error("PAYLOAD_TOO_LARGE", "请求内容超过大小限制"));
+    }
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    ResponseEntity<ApiResponse> notFound(Exception e) {
+        return ResponseEntity.status(404).body(ApiResponse.error("NOT_FOUND", "请求地址不存在"));
     }
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<ApiResponse> conflict(DataIntegrityViolationException e) {

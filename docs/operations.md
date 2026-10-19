@@ -7,9 +7,9 @@
 要求 JDK 21、Python 3.11+、Docker Compose v2。构建使用仓库的 Maven Wrapper。首次启动先生成本地配置，随机密码和签名密钥仅写入被忽略的 `.local/dev.env`：
 
 ```bash
-python3 scripts/dev-env.py
+make env
 docker compose --env-file .local/dev.env config --quiet
-docker compose --env-file .local/dev.env up -d --build
+docker compose --env-file .local/dev.env up -d --build --scale worker=2
 docker compose --env-file .local/dev.env ps
 curl --fail --silent http://127.0.0.1:8080/actuator/health
 ```
@@ -22,6 +22,14 @@ docker compose --env-file .local/dev.env up -d --scale worker=2 worker
 ```
 
 不要把 `.local/dev.env`、数据库转储、登录令牌、签名密钥或完整通知报文提交到 Git，也不要将 `docker compose config` 的完整输出附到问题报告。可记录请求号、订单号、事件号、状态、金额和已脱敏的错误信息。
+
+## 可选消息与监控拓扑
+
+`make mq-up` 启动固定摘要的 RocketMQ 5.5.0、初始化 Topic/Group，并将两个 Worker 切到 `rocketmq` 模式。默认 `db` 模式使用 MySQL 领取；同一 Outbox 同时只选择一种发布模式。切换前暂停写入、排空原模式在途任务，再切换所有 Worker，不能把模式切换作为未完成任务的删除手段。原生客户端为 5.2.2；开发网络关闭 TLS，真实环境须配置 TLS 和专用凭据。消息版本、Inbox、短租约、完成证据和重投机制见消息 ADR。
+
+`make monitoring-up` 启动仅本机开放的 Prometheus 9090 与 Grafana 3000。`__monitor__` 使用独立随机密码，应用只允许它访问自身身份、注销和 Prometheus 三个接口；采集代理续期短令牌，配置中没有长期 Bearer。Grafana 初始密码在 `.local/monitoring/grafana-admin-password`，勿放进问题报告。普通 OPS 账号保留正常运营权限。
+
+运营台在 `/operations.html`，按需登录 `ops`、`finance`、`admin`。计量修正只能选择已有且属于该会话的原始证据，并由不同人复核；批准后仍不能改写已生成账单。财务恢复先查独立渠道，再走统一事实入口，UNKNOWN 不释放退款额度。真实金额/币种冲突保留 DIFF，不允许通过人工“设为成功”消除。
 
 ## 发布前检查
 
@@ -110,3 +118,17 @@ test ! -s .local/backups/restore-invariants.tsv
 `POST /v1/admin/reconciliations` 需要 FINANCE 或 ADMIN，使用 multipart 字段 `file`、`channel`、`businessDate`、`billType`、`sourceTimezone`、`versionNo`。文件为 UTF-8，精确表头见 [渠道契约](spec/11-integration-contracts.md)，上限 10MiB；支付和退款分开导出。发生时间使用 UTC `Z`，再按 `Asia/Shanghai` 或 `UTC` 归档业务日期，禁止按服务器日期截取。
 
 同渠道、日期、类型与版本的相同文件返回原批次；相同批次但文件哈希不同返回冲突，应先核实再使用新版本。差异查询使用升序 ID 游标。有效 ISO 币种可被导入以保留币种差异，但平台首版仅接受 CNY 资金入账。导入不会直接修改支付、退款或不可变流水。通过权威查单补录后，只自动关闭已逐项核对业务号、金额、币种和业务日期的 CHANNEL_ONLY 差异；LOCAL_ONLY 仍等待完整渠道账单确认。
+
+## 持续负载与完整回滚入口
+
+固定候选镜像须带 `org.opencontainers.image.revision=<40位Git SHA>`。以下命令均使用全新的数据库、卷和内部网络；不对演示库施压：
+
+```bash
+python3 scripts/performance/run.py --image chargehub-app:1.0.0 --sha <候选SHA> --phase smoke --history 1000000 --down
+python3 scripts/performance/run.py --image chargehub-app:1.0.0 --sha <候选SHA> --phase all --history 1000000 --down
+python3 scripts/deployment/rollback.py --candidate-image chargehub-app:1.0.0 --previous-image chargehub-app:baseline-f8dede3
+```
+
+完整负载为固定 50RPS 900秒混合请求，再运行100会话、每5秒上报、1800秒；应用与依赖资源上限共4vCPU/8GiB，负载发生器另计。记录全部成功、业务拒绝、错误、超时与未发出的到达，成功查询与成功建单分别判断P95，不能用大量快速拒绝压低延迟。百万历史订单明确为合成 CANCELED/CLOSED 数据，不构造资金流水。原始请求、SQL/EXPLAIN与资源快照在 `.local/performance/<runId>/`。
+
+A46脚本从真实旧版空库启动，升级候选、完成独立模拟交易，停止写入后备份，再切回旧镜像核对事实。最后把MySQL恢复到另一数据库，把两个SQLite通过 backup API恢复到另两个卷，比较表事实摘要后重启候选。不逆向DDL，不覆盖原库，不包含真实渠道恢复或MQ外部日志恢复的承诺。

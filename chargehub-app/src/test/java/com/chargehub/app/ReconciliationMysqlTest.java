@@ -36,6 +36,9 @@ class ReconciliationMysqlTest {
                 Path schema = Path.of("../docs/spec/03-schema.sql");
                 if (!schema.toFile().exists()) schema = Path.of("docs/spec/03-schema.sql");
                 ScriptUtils.executeSqlScript(connection, new FileSystemResource(schema));
+                Path finance=Path.of("src/main/resources/db/migration/V4__finance_operations.sql");
+                if(!finance.toFile().exists())finance=Path.of("chargehub-app/src/main/resources/db/migration/V4__finance_operations.sql");
+                ScriptUtils.executeSqlScript(connection,new FileSystemResource(finance));
             }
             String pay1 = UUID.randomUUID().toString(), pay2 = UUID.randomUUID().toString(), pay3 = UUID.randomUUID().toString();
             String order1 = UUID.randomUUID().toString(), order2 = UUID.randomUUID().toString(), order3 = UUID.randomUUID().toString();

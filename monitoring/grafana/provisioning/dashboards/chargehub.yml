@@ -1,0 +1,10 @@
+apiVersion: 1
+providers:
+  - name: chargehub
+    orgId: 1
+    folder: ChargeHub
+    type: file
+    disableDeletion: true
+    editable: false
+    options:
+      path: /etc/grafana/dashboards

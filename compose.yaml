@@ -8,6 +8,10 @@ x-app-env: &app-env
   CHARGEHUB_CONTROL_KEY: ${CHARGEHUB_CONTROL_KEY:?required}
   CHARGEHUB_DEMO_PASSWORD: ${CHARGEHUB_DEMO_PASSWORD:?required}
   CHARGEHUB_FIXED_TIME: ${CHARGEHUB_FIXED_TIME:-}
+  CHARGEHUB_MONITOR_PASSWORD: ${CHARGEHUB_MONITOR_PASSWORD:?run python3 scripts/dev-env.py}
+  CHARGEHUB_REDIS_ENABLED: "true"
+  CHARGEHUB_REDIS_HOST: redis
+  CHARGEHUB_MESSAGING_MODE: ${CHARGEHUB_MESSAGING_MODE:-db}
   CHARGEHUB_PAYMENT_URL: http://mock-gateway:18081
   CHARGEHUB_DEVICE_URL: http://mock-device:18082
   CHARGEHUB_CALLBACK_URL: http://api:8080
@@ -70,7 +74,11 @@ services:
       timeout: 3s
       retries: 20
   api:
-    build: .
+    build: &app-build
+      context: .
+      args:
+        VCS_REF: ${CHARGEHUB_VCS_REF:-unknown}
+      secrets: [maven_settings, maven_ca]
     image: chargehub-app:1.0.0
     environment:
       <<: *app-env
@@ -82,7 +90,7 @@ services:
       mock-device: {condition: service_healthy}
   worker:
     image: chargehub-app:1.0.0
-    build: .
+    build: *app-build
     environment:
       <<: *app-env
       SPRING_PROFILES_ACTIVE: dev,worker
@@ -95,3 +103,9 @@ volumes:
   redis-data:
   gateway-data:
   device-data:
+
+secrets:
+  maven_settings:
+    file: ./.local/container-maven-settings.xml
+  maven_ca:
+    file: ./.local/container-maven-ca.crt

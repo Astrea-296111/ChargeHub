@@ -6,6 +6,7 @@ import java.time.*;
 import java.util.*;
 
 public record ApiResponse(String code, String message, Object data, String requestId) {
+    private static final Set<String> ACTOR_IDS = Set.of("requestedBy", "proposedBy", "decidedBy", "resolvedBy");
     public static ApiResponse ok(Object data) { return new ApiResponse("OK", "成功", sanitize(data), requestIdValue()); }
     public static ApiResponse error(String code, String message) { return new ApiResponse(code, message, null, requestIdValue()); }
     public static String requestIdValue() {
@@ -19,7 +20,7 @@ public record ApiResponse(String code, String message, Object data, String reque
             var target = new LinkedHashMap<String, Object>();
             source.forEach((key, value) -> {
                 String name = camel(key.toString());
-                target.put(name, value instanceof Number && (name.equals("id") || name.endsWith("Id"))
+                target.put(name, value instanceof Number && (name.equals("id") || name.endsWith("Id") || ACTOR_IDS.contains(name))
                         ? value.toString() : sanitize(value));
             });
             return target;

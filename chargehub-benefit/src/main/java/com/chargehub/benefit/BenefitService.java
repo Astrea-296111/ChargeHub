@@ -107,6 +107,7 @@ public class BenefitService {
     public Map<String, Object> publishTemplate(long templateId) {
         var template = db.one("SELECT * FROM coupon_template WHERE id=? FOR UPDATE", templateId);
         if (template == null) throw new BusinessException(404, "COUPON_TEMPLATE_NOT_FOUND", "优惠券模板不存在");
+        requireTemplateScope(template);
         if (!"PUBLISHED".equals(str(template, "status"))) {
             if (!instant(template, "claim_until").isAfter(clock.instant()) || !instant(template, "use_valid_until").isAfter(clock.instant())) {
                 throw new BusinessException(409, "COUPON_TEMPLATE_EXPIRED", "活动已结束，不能发布");
@@ -125,6 +126,7 @@ public class BenefitService {
         var template = db.one("SELECT * FROM coupon_template WHERE id=? FOR UPDATE", templateId);
         if (template == null) throw new BusinessException(404, "COUPON_TEMPLATE_NOT_FOUND", "优惠券模板不存在");
         Instant now = clock.instant();
+        requireTemplateScope(template);
         if (!"PUBLISHED".equals(str(template, "status")) || now.isBefore(instant(template, "claim_from"))
                 || !now.isBefore(instant(template, "claim_until")) || !now.isBefore(instant(template, "use_valid_until"))) {
             throw new BusinessException(409, "COUPON_NOT_CLAIMABLE", "优惠券不在可领取时间内");
@@ -275,6 +277,30 @@ public class BenefitService {
         if (!"AVAILABLE".equals(str(coupon, "status")) || now.isBefore(instant(coupon, "valid_from")) || !now.isBefore(instant(coupon, "valid_until"))) {
             throw new BusinessException(409, "COUPON_UNAVAILABLE", "优惠券不可用或不在有效期内");
         }
+        var rule = Json.read(str(coupon, "rule_snapshot"));
+        if (!"ALL_STATIONS".equals(str(rule, "scope")) || num(rule, "thresholdFen") < 0
+                || num(rule, "discountFen") <= 0 || num(rule, "discountFen") > 10000) {
+            throw new BusinessException(409, "COUPON_RULE_UNSUPPORTED", "优惠券冻结规则或适用范围不受首版支持");
+        }
+    }
+
+    private static void requireTemplateScope(Map<String, Object> template) {
+        if (!"ALL_STATIONS".equals(str(Json.read(str(template, "scope_snapshot")), "scope"))) {
+            throw new BusinessException(409, "COUPON_RULE_UNSUPPORTED", "优惠券模板适用范围不受首版支持");
+        }
+    }
+
+    /** Materialize expiry without touching locked coupons or returning already-issued stock. */
+    @Transactional
+    public boolean expireAvailable(long userId, long couponId) {
+        lockUser(userId, false);
+        var coupon = db.one("SELECT * FROM user_coupon WHERE id=? AND user_id=? FOR UPDATE", couponId, userId);
+        if (coupon == null || !"AVAILABLE".equals(str(coupon, "status"))
+                || clock.instant().isBefore(instant(coupon, "valid_until"))) return false;
+        db.update("UPDATE user_coupon SET status='EXPIRED',version=version+1 WHERE id=? AND status='AVAILABLE'", couponId);
+        db.update("INSERT INTO ops_audit(operator_id,action,target_type,target_no,reason,before_json,after_json,request_id) VALUES(0,'COUPON_EXPIRE','UserCoupon',?,'优惠券自然过期，不回补发行库存',?,?,?)",
+                String.valueOf(couponId), Json.write(coupon), Json.write(Map.of("status", "EXPIRED")), java.util.UUID.randomUUID().toString());
+        return true;
     }
 
     private static Map<String, Object> memberRule(Instant now) {

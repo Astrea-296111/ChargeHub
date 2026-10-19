@@ -1,5 +1,9 @@
 .git
 .local
-docs
-**/src
-simulators
+.github
+**/target
+**/__pycache__
+*.pyc
+.env
+.env.*
+docs/evidence

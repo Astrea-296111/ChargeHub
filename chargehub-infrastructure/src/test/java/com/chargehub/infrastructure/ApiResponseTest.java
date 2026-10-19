@@ -12,6 +12,9 @@ class ApiResponseTest {
         assertEquals("9007199254740993", data.get("id"));
         assertEquals("42", data.get("userId"));
         assertEquals(10000L, data.get("amountFen"));
+        var actors=(Map<?, ?>)ApiResponse.sanitize(Map.of("requested_by",9007199254740993L,"decided_by",0L));
+        assertEquals("9007199254740993",actors.get("requestedBy"));
+        assertEquals("0",actors.get("decidedBy"));
     }
     @Test void javaTimeSnapshotRoundTripsAsUtcString() {
         String json = Json.write(Map.of("at", Instant.parse("2026-10-18T07:00:00Z")));

@@ -106,6 +106,23 @@ class PaymentServiceTest {
         assertEquals(7900L,payment.get("refund_success_fen"));assertEquals(0L,payment.get("refund_reserved_fen"));
     }
 
+    @Test void retryableFailureReReservesSameRefundAndOldFailureCannotReleaseNewAttempt(){
+        service.capture(captureEvent("paid"));
+        String no=service.ensureRefund(orderNo,7900,"BALANCE").get("refundNo").toString();
+        var failure=refundEvent(no,"retryable-failure","REFUND_FAILED");failure.put("retryable",true);failure.put("attempt",0);
+        service.refundSucceeded(failure);assertEquals("FAILED_RETRYABLE",refunds.get(no).get("status"));assertEquals(0L,payment.get("refund_reserved_fen"));
+        var query=new LinkedHashMap<>(failure);query.put("status","FAILED");
+        service.prepareRefundRetry(no,query);assertEquals("INIT",refunds.get(no).get("status"));assertEquals(7900L,payment.get("refund_reserved_fen"));
+        var stale=new LinkedHashMap<>(failure);stale.put("channelEventId","another-old-failure");
+        service.refundSucceeded(stale);assertEquals(7900L,payment.get("refund_reserved_fen"));assertEquals("INIT",refunds.get(no).get("status"));
+        var success=refundEvent(no,"retried-success","REFUND_SUCCESS");service.refundSucceeded(success);
+        assertEquals("SUCCESS",refunds.get(no).get("status"));assertEquals(0L,payment.get("refund_reserved_fen"));assertEquals(7900L,payment.get("refund_success_fen"));
+        assertEquals(1,refunds.size());assertEquals(2,cash.size());
+        var delayed=new LinkedHashMap<>(failure);delayed.put("channelEventId","old-failure-after-retry-success");
+        assertEquals(true,service.refundSucceeded(delayed).get("valid"));assertEquals("SUCCESS",refunds.get(no).get("status"));
+        assertEquals(7900L,payment.get("refund_success_fen"));assertEquals(0L,payment.get("refund_reserved_fen"));
+    }
+
     @Test void definitiveFailedRefundReleasesReservationOnceAndCannotBecomeSuccess(){
         service.capture(captureEvent("paid"));
         String refundNo=service.ensureRefund(orderNo,7900,"BALANCE").get("refundNo").toString();
@@ -159,7 +176,8 @@ class PaymentServiceTest {
         }else if(sql.startsWith("UPDATE refund_order")){
             var row=refunds.get(a[a.length-1].toString());
             if(sql.contains("status='SUCCESS'")){row.put("status","SUCCESS");row.put("provider_refund_no",a[0]);}
-            else if(sql.contains("status='FAILED_FINAL'")){row.put("status","FAILED_FINAL");row.put("provider_refund_no",a[0]);}
+            else if(sql.contains("status='INIT'")){row.put("status","INIT");row.put("retry_attempt",((Number)row.getOrDefault("retry_attempt",0L)).longValue()+1);}
+            else if(sql.contains("status=?,provider_refund_no=?")){row.put("status",a[0]);row.put("provider_refund_no",a[1]);}
             else if(sql.contains("status=?"))row.put("status",a[0]);
             else throw new AssertionError("Unmodeled refund mutation: "+sql);
         }else throw new AssertionError("Unmodeled mutation: "+sql);

@@ -1,0 +1,70 @@
+name: isolated-performance-manual
+on:
+  workflow_dispatch:
+    inputs:
+      mixed_seconds:
+        description: Fixed50 RPS duration (full acceptance900 seconds)
+        default: '900'
+        required: true
+      sessions_seconds:
+        description: 100 sessions with5-second samples (full acceptance1800 seconds)
+        default: '1800'
+        required: true
+      history_orders:
+        description: Synthetic historical canceled orders (full acceptance1000000)
+        default: '1000000'
+        required: true
+permissions:
+  contents: read
+jobs:
+  fixed-candidate-long-run:
+    # Deliberately opt-in. The regular workflow never starts30-minute workloads.
+    # Register a dedicated >=5CPU/>=10GiB Linux runner with this label.
+    runs-on: [self-hosted, linux, x64, chargehub-perf]
+    timeout-minutes: 90
+    concurrency: {group: chargehub-perf-machine, cancel-in-progress: false}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify resource and parameter prerequisites
+        env:
+          MIXED_SECONDS: ${{ inputs.mixed_seconds }}
+          SESSION_SECONDS: ${{ inputs.sessions_seconds }}
+          HISTORY: ${{ inputs.history_orders }}
+        run: |
+          python3 - <<'PY'
+          import os
+          for key in ['MIXED_SECONDS','SESSION_SECONDS','HISTORY']:
+              value=os.environ[key]
+              assert value.isdigit() and int(value)>0, key
+          assert int(os.environ['HISTORY'])<=1000000
+          PY
+      - name: Build immutable candidate and simulators
+        run: |
+          python3 scripts/container/maven-settings.py
+          docker build --secret id=maven_settings,src=.local/container-maven-settings.xml --secret id=maven_ca,src=.local/container-maven-ca.crt --build-arg VCS_REF=${{ github.sha }} -t chargehub-app:perf-${{ github.sha }} .
+          docker build -t chargehub-simulator:1.0.0 simulators
+      - name: 50 RPS open arrivals and million-row actual EXPLAIN
+        env:
+          MIXED_SECONDS: ${{ inputs.mixed_seconds }}
+          HISTORY: ${{ inputs.history_orders }}
+        run: python3 scripts/performance/run.py --image chargehub-app:perf-${{ github.sha }} --sha ${{ github.sha }} --phase mixed --duration "$MIXED_SECONDS" --history "$HISTORY" --down
+      - name: 100 sessions with5-second device events
+        env:
+          SESSION_SECONDS: ${{ inputs.sessions_seconds }}
+          HISTORY: ${{ inputs.history_orders }}
+        run: python3 scripts/performance/run.py --image chargehub-app:perf-${{ github.sha }} --sha ${{ github.sha }} --phase sessions --duration "$SESSION_SECONDS" --history "$HISTORY" --down
+      - name: Raw per-request evidence (never env files or database dumps)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: actual-isolated-performance
+          path: |
+            .local/performance/*/run.json
+            .local/performance/*/seed-summary.json
+            .local/performance/*/*.explain.json.txt
+            .local/performance/*/*.analyze.txt
+            .local/performance/*/containers-*.json
+            .local/performance/*/docker-stats-*.jsonl
+            .local/performance/*/*/requests.jsonl
+            .local/performance/*/*/summary.json
+          retention-days: 14

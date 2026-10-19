@@ -32,7 +32,7 @@ class ReconciliationServiceTest {
         });
         when(db.update(anyString(), any(Object[].class))).thenAnswer(call -> {
             Object[] args = (Object[]) call.getRawArguments()[1];
-            batch.put("status", args[0]);
+            if(((String)call.getArgument(0)).startsWith("UPDATE reconcile_batch SET status="))batch.put("status", args[0]);
             return 1;
         });
         var response = new ReconciliationService(db).importCsv(7, "MOCK", "2026-10-18", "PAYMENT", "Asia/Shanghai", 1,

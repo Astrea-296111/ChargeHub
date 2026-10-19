@@ -7,14 +7,22 @@ public class DevSeed implements ApplicationRunner {
  private final Db db;private final Environment env;private final PasswordEncoder encoder;private final Clock clock;private final StationService stations;private final BenefitService benefits;
  public DevSeed(Db db,Environment env,PasswordEncoder encoder,Clock clock,StationService stations,BenefitService benefits){this.db=db;this.env=env;this.encoder=encoder;this.clock=clock;this.stations=stations;this.benefits=benefits;}
  @Override @Transactional public void run(ApplicationArguments args){
+  // Serialize concurrent API/Worker bootstrap before INSERT IGNORE takes shared row locks.
+  if(db.one("SELECT id FROM iam_admin_guard WHERE id=1 FOR UPDATE")==null)throw new IllegalStateException("Bootstrap guard migration is missing");
   String pwd=env.getProperty("CHARGEHUB_DEMO_PASSWORD","");if(pwd.length()<12)throw new IllegalStateException("dev requires CHARGEHUB_DEMO_PASSWORD of at least 12 characters");
   String hash=encoder.encode(pwd);
   for(String[] u:List.of(new String[]{"customer","CUSTOMER"},new String[]{"member","CUSTOMER"},new String[]{"ops","OPS"},new String[]{"finance","FINANCE"},new String[]{"admin","ADMIN"})){
    db.update("INSERT IGNORE INTO iam_user(login_name,password_hash) VALUES(?,?)",u[0],hash);
    Map<String,Object> row=db.one("SELECT id FROM iam_user WHERE login_name=?",u[0]);db.update("INSERT IGNORE INTO iam_user_role(user_id,role_code) VALUES(?,?)",row.get("id"),u[1]);
   }
+  String monitor=env.getProperty("CHARGEHUB_MONITOR_PASSWORD","");
+  if(!monitor.isBlank()){
+   if(monitor.length()<16)throw new IllegalStateException("CHARGEHUB_MONITOR_PASSWORD must contain at least 16 characters");
+   db.update("INSERT IGNORE INTO iam_user(login_name,password_hash) VALUES('__monitor__',?)",encoder.encode(monitor));
+   long monitorId=Db.num(db.one("SELECT id FROM iam_user WHERE login_name='__monitor__'"),"id");
+   db.update("INSERT IGNORE INTO iam_user_role(user_id,role_code) VALUES(?,'OPS')",monitorId);
+  }
   db.update("INSERT IGNORE INTO iam_user(login_name,password_hash,enabled) VALUES('__system__','!DISABLED',0)");
-  db.one("SELECT id FROM iam_user WHERE login_name='admin' FOR UPDATE");
   long member=Db.num(db.one("SELECT id FROM iam_user WHERE login_name='member'"),"id");Instant now=clock.instant();
   db.update("INSERT IGNORE INTO membership(user_id,plan_code,valid_from,valid_until) VALUES(?,'DEMO_MONTHLY',?,?)",member,Timestamp.from(now.minusSeconds(86400)),Timestamp.from(now.plusSeconds(366L*86400)));
   for(int i=1;i<=2;i++){

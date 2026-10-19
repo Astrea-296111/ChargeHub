@@ -4,9 +4,8 @@ import com.chargehub.infrastructure.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.security.SecureRandom;
-import java.time.Instant;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.nio.charset.StandardCharsets;
 
 /** Short-lived opaque bearer tokens. Only SHA-256 digests are stored in MySQL. */
 @Service
@@ -16,18 +15,20 @@ public class TokenService {
     private final PasswordEncoder passwords;
     private final SecureRandom random = new SecureRandom();
     private final String dummyHash;
-    private final ConcurrentHashMap<String, Attempts> attempts = new ConcurrentHashMap<>();
-    private record Attempts(long window, int count) {}
+    private final LoginAttemptLimiter attempts;
 
-    public TokenService(Db db, PasswordEncoder passwords) {
-        this.db = db; this.passwords = passwords;
+    public TokenService(Db db, PasswordEncoder passwords, LoginAttemptLimiter attempts) {
+        this.db = db;
+        this.passwords = passwords;
+        this.attempts = attempts;
         this.dummyHash = passwords.encode(UUID.randomUUID().toString());
     }
 
     public Map<String, Object> login(String username, String password, String sourceAddress) {
-        if (username == null || username.isBlank() || username.length() > 80 || password == null || password.length() > 128)
+        if (username == null || username.isBlank() || username.length() > 80 || password == null || password.isEmpty()
+                || password.length() > 128 || password.getBytes(StandardCharsets.UTF_8).length > 72)
             throw new BusinessException(400, "INVALID_REQUEST", "用户名或密码格式不正确");
-        rateLimit(username, sourceAddress);
+        attempts.check(username, sourceAddress);
         var user = db.one("SELECT id,login_name,password_hash,enabled FROM iam_user WHERE login_name=?", username);
         String hash = user == null ? dummyHash : Db.str(user, "password_hash");
         boolean matches = passwords.matches(password, hash);
@@ -37,15 +38,15 @@ public class TokenService {
         Set<String> roles = roles(userId);
         byte[] bytes = new byte[32]; random.nextBytes(bytes);
         String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-        db.update("INSERT INTO auth_token(token_hash,user_id,expires_at) VALUES(?,?,?)",
-                Json.hash(token), userId, Instant.now().plusSeconds(TTL_SECONDS));
+        db.update("INSERT INTO auth_token(token_hash,user_id,expires_at) VALUES(?,?,TIMESTAMPADD(SECOND,?,UTC_TIMESTAMP(3)))",
+                Json.hash(token), userId, TTL_SECONDS);
         return Map.of("accessToken", token, "tokenType", "Bearer", "expiresIn", TTL_SECONDS, "roles", roles);
     }
 
     public UserIdentity resolve(String token) {
         if (token == null || !token.matches("[A-Za-z0-9_-]{43}")) return null;
         var user = db.one("SELECT u.id,u.login_name FROM auth_token t JOIN iam_user u ON u.id=t.user_id "
-                + "WHERE t.token_hash=? AND t.expires_at>? AND u.enabled=1", Json.hash(token), Instant.now());
+                + "WHERE t.token_hash=? AND t.revoked_at IS NULL AND t.expires_at>UTC_TIMESTAMP(3) AND u.enabled=1", Json.hash(token));
         return user == null ? null : new UserIdentity(Db.num(user, "id"), Db.str(user, "login_name"), roles(Db.num(user, "id")));
     }
 
@@ -56,12 +57,4 @@ public class TokenService {
         return Collections.unmodifiableSet(roles);
     }
 
-    private void rateLimit(String username, String address) {
-        long now = Instant.now().getEpochSecond();
-        if (attempts.size() > 10_000) attempts.entrySet().removeIf(entry -> entry.getValue().window < now - 60);
-        String key = Json.hash(address + ":" + username.toLowerCase(Locale.ROOT));
-        Attempts state = attempts.compute(key, (ignored, old) -> old == null || old.window < now - 60
-                ? new Attempts(now, 1) : new Attempts(old.window, old.count + 1));
-        if (state.count > 10) throw new BusinessException(429, "LOGIN_RATE_LIMITED", "登录尝试过于频繁，请稍后重试");
-    }
 }

@@ -1,0 +1,9 @@
+{
+  "rocketMQClusterName": "ChargeHubCluster",
+  "proxyMode": "LOCAL",
+  "proxyName": "chargehub-proxy",
+  "localServeAddr": "mq-broker",
+  "remotingAccessAddr": "mq-broker",
+  "grpcServerPort": 8081,
+  "remotingListenPort": 8080
+}

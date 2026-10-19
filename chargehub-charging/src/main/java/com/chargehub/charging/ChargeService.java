@@ -4,6 +4,7 @@ import com.chargehub.infrastructure.*;
 import com.chargehub.station.StationService;
 import com.chargehub.benefit.BenefitService;
 import com.chargehub.payment.PaymentService;
+import com.chargehub.payment.FinancialFactHandler;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.*;
@@ -12,7 +13,7 @@ import java.util.*;
 
 /** Coordinates local application services in one MySQL transaction. No network I/O here. */
 @Service
-public class ChargeService {
+public class ChargeService implements FinancialFactHandler {
     private final Db db; private final StationService station; private final BenefitService benefits;
     private final PaymentService payments; private final Outbox outbox; private final Clock clock;
     public ChargeService(Db db,StationService station,BenefitService benefits,PaymentService payments,Outbox outbox,Clock clock){this.db=db;this.station=station;this.benefits=benefits;this.payments=payments;this.outbox=outbox;this.clock=clock;}
@@ -24,30 +25,55 @@ public class ChargeService {
         return db.one("SELECT * FROM charge_order WHERE order_no=? FOR UPDATE",no);
     }
     public Map<String,Object> owned(long user,String no){
-        Map<String,Object> o=db.one("SELECT * FROM charge_order WHERE order_no=? AND user_id=?",no,user);
+        Map<String,Object> o=db.one("SELECT o.*,s.session_no FROM charge_order o LEFT JOIN charge_session s ON s.order_no=o.order_no WHERE o.order_no=? AND o.user_id=?",no,user);
         if(o==null)throw new BusinessException(404,"NOT_FOUND","订单不存在");
         return view(o);
     }
     public Map<String,Object> view(Map<String,Object> o){
         Map<String,Object> m=new LinkedHashMap<>();
         for(String k:List.of("order_no","connector_id","station_id","status","financial_status","prepaid_fen","currency","payment_deadline","start_deadline","started_at","ended_at","exception_code","created_at"))m.put(k,o.get(k));
-        Map<String,Object> s=db.one("SELECT session_no FROM charge_session WHERE order_no=?",o.get("order_no"));
-        m.put("sessionNo",s==null?null:s.get("session_no"));
+        Map<String,Object> session=o.containsKey("session_no")?o:db.one("SELECT session_no FROM charge_session WHERE order_no=?",o.get("order_no"));
+        m.put("sessionNo",session==null?null:session.get("session_no"));
         Map<String,Object> t=Json.read(Db.str(o,"tariff_snapshot"));m.put("tariffVersion",t.get("tariffVersion"));return m;
     }
     public Map<String,Object> list(long user,Long cursor,int limit){
-        List<Map<String,Object>> rows=db.rows("SELECT * FROM charge_order WHERE user_id=? AND id<? ORDER BY id DESC LIMIT ?",user,cursor==null?Long.MAX_VALUE:cursor,limit);
-        Map<String,Object> p=new LinkedHashMap<>();p.put("items",rows.stream().map(this::view).toList());p.put("nextCursor",rows.size()==limit?rows.getLast().get("id").toString():null);return p;
+        return listPage(user,cursor==null?null:cursor.toString(),limit);
+    }
+    public Map<String,Object> listPage(long user,String encoded,int limit){
+        if(limit<1||limit>100)throw new BusinessException(400,"VALIDATION_ERROR","分页大小须为1至100");
+        OrderCursor cursor=null;
+        if(encoded!=null&&!encoded.isBlank()){
+            if(encoded.matches("[1-9][0-9]{0,18}")){
+                long id;try{id=Long.parseLong(encoded);}catch(NumberFormatException e){throw new BusinessException(400,"INVALID_CURSOR","订单游标不正确");}
+                Map<String,Object> previous=db.one("SELECT id,created_at FROM charge_order WHERE user_id=? AND id=?",user,id);
+                if(previous==null)throw new BusinessException(400,"INVALID_CURSOR","订单游标不正确");
+                cursor=new OrderCursor(Db.instant(previous,"created_at"),id);
+            }else cursor=OrderCursor.decode(encoded);
+        }
+        String query="SELECT o.*,s.session_no FROM charge_order o LEFT JOIN charge_session s ON s.order_no=o.order_no WHERE o.user_id=?";
+        List<Map<String,Object>> rows=cursor==null
+                ?db.rows(query+" ORDER BY o.created_at DESC,o.id DESC LIMIT ?",user,limit+1)
+                :db.rows(query+" AND (o.created_at<? OR (o.created_at=? AND o.id<?)) ORDER BY o.created_at DESC,o.id DESC LIMIT ?",user,cursor.createdAt(),cursor.createdAt(),cursor.id(),limit+1);
+        boolean more=rows.size()>limit;List<Map<String,Object>> page=more?rows.subList(0,limit):rows;
+        Map<String,Object> result=new LinkedHashMap<>();result.put("items",page.stream().map(this::view).toList());
+        result.put("nextCursor",more?new OrderCursor(Db.instant(page.getLast(),"created_at"),Db.num(page.getLast(),"id")).encode():null);return result;
     }
     @Transactional
     public Map<String,Object> create(long user,Map<String,Object> request){
         Map<String,Object> u=db.one("SELECT * FROM iam_user WHERE id=? FOR UPDATE",user);
+        if(u==null||Db.num(u,"enabled")!=1)throw new BusinessException(401,"AUTH_REQUIRED","账号不可用");
         if(u.get("active_order_no")!=null)throw new BusinessException(409,"ACTIVE_ORDER_EXISTS","已有占用资源的订单");
         if(Db.num(db.one("SELECT COUNT(*) n FROM charge_order WHERE user_id=? AND financial_status IN ('SHORTFALL','DIFF')",user),"n")>0)throw new BusinessException(409,"UNRESOLVED_FUNDS","需先处理资金差异");
         long connector=number(request,"connectorId");long expected=number(request,"expectedTariffVersion");
-        Map<String,Object> tariff=station.tariff(connector,expected);
+        // Catalogue writes use station -> connector. Hold the same locks while freezing
+        // tariff and eligibility so disabling/moving a gun cannot race a new reservation.
+        Map<String,Object> hint=db.one("SELECT station_id FROM connector WHERE id=?",connector);
+        if(hint==null)throw new BusinessException(404,"NOT_FOUND","充电枪不存在");
+        db.one("SELECT id FROM station WHERE id=? FOR UPDATE",hint.get("station_id"));
         Map<String,Object> c=db.one("SELECT * FROM connector WHERE id=? FOR UPDATE",connector);
         if(c==null)throw new BusinessException(404,"NOT_FOUND","充电枪不存在");
+        if(Db.num(c,"station_id")!=Db.num(hint,"station_id"))throw new BusinessException(409,"CONNECTOR_CHANGED","充电枪归属已变更，请重新确认");
+        Map<String,Object> tariff=station.tariff(connector,expected);
         if(c.get("active_order_no")!=null||!"IDLE".equals(c.get("status")))throw new BusinessException(409,"CONNECTOR_BUSY","充电枪已占用");
         String no=UUID.randomUUID().toString();Instant now=clock.instant();
         db.update("INSERT INTO charge_order(order_no,user_id,station_id,connector_id,tariff_id,tariff_snapshot,payment_deadline,created_at) VALUES(?,?,?,?,?,?,?,?)",no,user,tariff.get("stationId"),connector,tariff.get("tariffId"),Json.write(tariff),Timestamp.from(now.plusSeconds(300)),Timestamp.from(now));
@@ -127,16 +153,17 @@ public class ChargeService {
         if(p!=null&&Db.num(p,"captured_fen")==0&&!Set.of("CLOSED","NOT_FOUND").contains(p.get("status")))return;
         benefits.release(no);
         if(p!=null&&Db.num(p,"captured_fen")>0){Map<String,Object> r=payments.ensureRefund(no,Db.num(p,"captured_fen"),"FULL_CANCEL");outbox.enqueue("RefundRequested",Db.str(r,"refund_no"),Map.of("refundNo",r.get("refund_no"),"orderNo",no));}
-        db.update("UPDATE charge_order SET status='CANCELED',financial_status=? WHERE order_no=?","DIFF".equals(o.get("financial_status"))?"DIFF":p!=null&&Db.num(p,"captured_fen")>Db.num(p,"refund_success_fen")?"REFUNDING":"CLOSED",no);
+        db.update("UPDATE charge_order SET status='CANCELED',financial_status=? WHERE order_no=?",Set.of("DIFF","SHORTFALL").contains(o.get("financial_status"))?o.get("financial_status"):p!=null&&Db.num(p,"captured_fen")>Db.num(p,"refund_success_fen")?"REFUNDING":"CLOSED",no);
         release(o);
     }
-    private void release(Map<String,Object> o){db.update("UPDATE connector SET active_order_no=NULL,status='IDLE',version=version+1 WHERE id=? AND active_order_no=?",o.get("connector_id"),o.get("order_no"));db.update("UPDATE iam_user SET active_order_no=NULL WHERE id=? AND active_order_no=?",o.get("user_id"),o.get("order_no"));}
+    private void release(Map<String,Object> o){db.update("UPDATE connector SET active_order_no=NULL,status=CASE WHEN reported_device_status IN ('FAULT','OFFLINE') THEN reported_device_status ELSE 'IDLE' END,version=version+1 WHERE id=? AND active_order_no=?",o.get("connector_id"),o.get("order_no"));db.update("UPDATE iam_user SET active_order_no=NULL WHERE id=? AND active_order_no=?",o.get("user_id"),o.get("order_no"));}
     @Transactional
     public Map<String,Object> stop(long user,String no){
         Map<String,Object> o=locked(no);checkOwner(o,user);
-        if(Set.of("BILLING","REVIEW","COMPLETED","CANCELED").contains(o.get("status")))return view(o);
-        if(!Set.of("CHARGING","STOP_PENDING").contains(o.get("status")))throw new BusinessException(409,"INVALID_STATE","会话尚未开充");
+        if(Set.of("COMPLETED","CANCELED").contains(o.get("status")))return view(o);
         Map<String,Object> s=db.one("SELECT * FROM charge_session WHERE order_no=?",no);
+        if(s!=null&&"STOPPED".equals(s.get("status")))return view(o);
+        if(s==null||!Set.of("CHARGING","STOP_PENDING","REVIEW","EXCEPTION").contains(o.get("status")))throw new BusinessException(409,"INVALID_STATE","会话尚未开充");
         createStop(o,s);return owned(user,no);
     }
     public void createStop(Map<String,Object> o,Map<String,Object> s){
@@ -149,11 +176,11 @@ public class ChargeService {
     public Map<String,Object> prepareStart(String no){
         Map<String,Object> o=locked(no);Map<String,Object> c=db.one("SELECT * FROM device_command WHERE order_no=? AND command_type='START' FOR UPDATE",no);
         if(c==null)return null;
-        if(!"START_PENDING".equals(o.get("status"))||!clock.instant().isBefore(Db.instant(o,"start_deadline")))return null;
+        if(!"START_PENDING".equals(o.get("status"))||Set.of("DIFF","SHORTFALL").contains(o.get("financial_status"))||!clock.instant().isBefore(Db.instant(o,"start_deadline")))return null;
         db.update("UPDATE device_command SET status='SENT',attempt_count=attempt_count+1 WHERE id=?",c.get("id"));return Json.read(Db.str(c,"request_payload"));
     }
     @Transactional
-    public void deviceUnknown(String no,String phase){Map<String,Object> o=locked(no);if(!Set.of("COMPLETED","CANCELED","REVIEW","BILLING").contains(o.get("status"))&&!("START".equals(phase)&&"CHARGING".equals(o.get("status"))))db.update("UPDATE charge_order SET status='EXCEPTION',exception_code=? WHERE order_no=?",phase+"_RESULT_UNKNOWN",no);}
+    public void deviceUnknown(String no,String phase){Map<String,Object> o=locked(no);if(!Set.of("COMPLETED","CANCELED","REVIEW","BILLING").contains(o.get("status"))&&!("START".equals(phase)&&"CHARGING".equals(o.get("status"))))db.update("UPDATE charge_order SET status='EXCEPTION',exception_code=CASE WHEN financial_status IN ('DIFF','SHORTFALL') THEN exception_code ELSE ? END WHERE order_no=?",phase+"_RESULT_UNKNOWN",no);}
     @Transactional
     public void deviceCharging(String no){
         Map<String,Object> o=locked(no);Map<String,Object> s=db.one("SELECT * FROM charge_session WHERE order_no=?",no);
@@ -161,7 +188,7 @@ public class ChargeService {
         if("CANCELING".equals(o.get("status"))){createStop(o,s);return;}
         if("EXCEPTION".equals(o.get("status"))){
             Map<String,Object> stop=db.one("SELECT id FROM device_command WHERE order_no=? AND command_type='STOP'",no);
-            db.update("UPDATE charge_order SET status=?,exception_code=NULL WHERE order_no=?",stop==null?"CHARGING":"STOP_PENDING",no);
+            db.update("UPDATE charge_order SET status=?,exception_code=CASE WHEN financial_status IN ('DIFF','SHORTFALL') THEN exception_code ELSE NULL END WHERE order_no=?",stop==null?"CHARGING":"STOP_PENDING",no);
         }
     }
     @Transactional
@@ -180,6 +207,31 @@ public class ChargeService {
         if("CLOSED".equals(response.get("status"))&&Boolean.FALSE.equals(payments.applyChannelPayment(response).get("valid"))){channelMismatch(Db.str(p,"pay_no"));return;}
         if(Set.of("CLOSED","NOT_FOUND").contains(response.get("status"))&&p!=null){db.update("UPDATE payment_order SET status='CLOSED' WHERE pay_no=? AND captured_fen=0",p.get("pay_no"));if("CANCELING".equals(o.get("status")))finishCancel(no);}
     }
+    @Override
+    @Transactional
+    public Map<String,Object> acceptVerified(Map<String,Object> event) { return notification(event); }
+
+    @Override
+    @Transactional
+    public void financialDifference(String orderNo,String code) {
+        Map<String,Object> o=locked(orderNo);
+        if(code==null||!code.matches("[A-Z0-9_]{1,64}"))throw new BusinessException(400,"VALIDATION_ERROR","差异类型不正确");
+        db.update("UPDATE charge_order SET financial_status='DIFF',exception_code=COALESCE(exception_code,?),version=version+1 WHERE order_no=?",code,o.get("order_no"));
+    }
+
+    @Override
+    @Transactional
+    public void reconsiderFinancialClose(String orderNo) {
+        Map<String,Object> o=locked(orderNo);
+        if("SHORTFALL".equals(o.get("financial_status")))return;
+        long unresolved=Db.num(db.one("SELECT COUNT(*) n FROM reconcile_item WHERE order_no=? AND status<>'RESOLVED'",orderNo),"n");
+        if(unresolved==0&&"RECONCILIATION_DIFFERENCE".equals(o.get("exception_code"))) {
+            Map<String,Object> p=payments.getByOrder(orderNo);
+            db.update("UPDATE charge_order SET financial_status=?,exception_code=NULL WHERE order_no=?",p!=null&&Db.num(p,"refund_reserved_fen")>0?"REFUNDING":"OPEN",orderNo);
+        }
+        closeFinancial(orderNo);
+    }
+
     @Transactional
     public void closeFinancial(String no){
         Map<String,Object> o=locked(no);
@@ -187,6 +239,13 @@ public class ChargeService {
         Map<String,Object> p=payments.getByOrder(no),b=db.one("SELECT payable_fen FROM charge_bill WHERE order_no=?",no);
         long expected=b==null?0:Db.num(b,"payable_fen");
         long net=Db.num(db.one("SELECT COALESCE(SUM(CASE WHEN biz_type='CAPTURE' THEN amount_fen ELSE -amount_fen END),0) n FROM cash_entry WHERE order_no=?",no),"n");
-        if(net==expected&&(p==null||Db.num(p,"refund_reserved_fen")==0)&&Db.num(db.one("SELECT COUNT(*) n FROM reconcile_item WHERE order_no=? AND status<>'RESOLVED'",no),"n")==0)db.update("UPDATE charge_order SET financial_status='CLOSED' WHERE order_no=?",no);
+        if(net==expected&&(p==null||Db.num(p,"refund_reserved_fen")==0)&&Db.num(db.one("SELECT COUNT(*) n FROM reconcile_item WHERE order_no=? AND status<>'RESOLVED'",no),"n")==0){
+            db.update("UPDATE charge_order SET financial_status='CLOSED' WHERE order_no=?",no);
+            // A prior difference may have retained the user after a proven physical stop.
+            // Clear only this order's binding after all money/evidence checks succeeded.
+            var session=db.one("SELECT status FROM charge_session WHERE order_no=?",no);
+            if(session==null||Set.of("STOPPED","NOT_STARTED","REJECTED").contains(session.get("status")))
+                db.update("UPDATE iam_user SET active_order_no=NULL WHERE id=? AND active_order_no=?",o.get("user_id"),no);
+        }
     }
 }

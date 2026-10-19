@@ -34,8 +34,11 @@ public class Hmac {
         String timestamp = request.getHeader("X-Timestamp");
         String nonce = request.getHeader("X-Nonce");
         String signature = request.getHeader("X-Signature");
-        if (keyId == null || !keyId.equals(expectedKeyId) || timestamp == null || nonce == null || signature == null)
+        if (keyId == null || !keyId.matches("[A-Za-z0-9][A-Za-z0-9._-]{0,79}")
+                || timestamp == null || nonce == null || signature == null)
             throw unauthorized();
+        IntegrationKey integrationKey = key(keyId);
+        if (!integrationKey.owner().equals(expectedOwner(expectedKeyId))) throw unauthorized();
         long seconds;
         byte[] provided;
         try {
@@ -46,7 +49,7 @@ public class Hmac {
         long now = clock.instant().getEpochSecond();
         if (seconds < now - 300 || seconds > now + 300) throw unauthorized();
         byte[] expected = sign(request.getMethod(), request.getRequestURI(), timestamp, nonce,
-                body == null ? new byte[0] : body, secret(keyId));
+                body == null ? new byte[0] : body, integrationKey.secret());
         if (!MessageDigest.isEqual(expected, provided)) throw unauthorized();
         try {
             db.update("INSERT INTO integration_nonce(key_id,nonce,expires_at) VALUES(?,?,?)",
@@ -61,27 +64,51 @@ public class Hmac {
             throw new IllegalArgumentException("Signature path must be an absolute path without query");
         String timestamp = Long.toString(clock.instant().getEpochSecond());
         String nonce = UUID.randomUUID().toString();
-        return Map.of("X-Key-Id", keyId, "X-Timestamp", timestamp, "X-Nonce", nonce,
+        String signingId = Set.of("payment", "device", "control").contains(keyId)
+                ? environment.getProperty("chargehub." + keyId + "-key-id", keyId) : keyId;
+        return Map.of("X-Key-Id", signingId, "X-Timestamp", timestamp, "X-Nonce", nonce,
                 "X-Signature", Base64.getEncoder().encodeToString(sign(method, path, timestamp, nonce,
-                        body == null ? new byte[0] : body, secret(keyId))));
+                        body == null ? new byte[0] : body, key(signingId).secret())));
     }
 
     public Map<String, String> headers(String method, String path, String body, String keyId) {
         return headers(method, path, body == null ? new byte[0] : body.getBytes(StandardCharsets.UTF_8), keyId);
     }
 
-    private String secret(String keyId) {
+    private record IntegrationKey(String owner, String secret) {}
+
+    private String expectedOwner(String expectedKeyId) {
+        for (String kind : List.of("payment", "device", "control")) {
+            if (kind.equals(expectedKeyId) || expectedKeyId.equals(environment.getProperty("chargehub." + kind + "-key-id", kind)))
+                return kind;
+        }
+        throw unauthorized();
+    }
+
+    private IntegrationKey key(String keyId) {
+        if (keyId == null || !keyId.matches("[A-Za-z0-9][A-Za-z0-9._-]{0,79}")) throw unauthorized();
+        // Register overlapping key IDs explicitly. Their owner prevents payment/device key substitution.
+        String prefix = "chargehub.integration-keys." + keyId;
+        String owner = environment.getProperty(prefix + ".owner");
+        if (owner != null) {
+            if (!Set.of("payment", "device", "control").contains(owner)) throw unauthorized();
+            return new IntegrationKey(owner, configuredSecret(environment.getProperty(prefix + ".secret")));
+        }
         for (String kind : List.of("payment", "device", "control")) {
             String configuredId = environment.getProperty("chargehub." + kind + "-key-id", kind);
             if (!configuredId.equals(keyId)) continue;
             String secret = environment.getProperty("chargehub." + kind + "-key");
             if (secret == null || secret.isBlank())
                 secret = environment.getProperty("CHARGEHUB_" + kind.toUpperCase(Locale.ROOT) + "_KEY");
-            if (secret == null || secret.length() < 16)
-                throw new BusinessException(503, "INTEGRATION_NOT_CONFIGURED", "集成密钥未配置或长度不足16字符");
-            return secret;
+            return new IntegrationKey(kind, configuredSecret(secret));
         }
         throw unauthorized();
+    }
+
+    private String configuredSecret(String secret) {
+        if (secret == null || secret.length() < 16)
+            throw new BusinessException(503, "INTEGRATION_NOT_CONFIGURED", "集成密钥未配置或长度不足16字符");
+        return secret;
     }
 
     static byte[] sign(String method, String path, String timestamp, String nonce, byte[] body, String secret) {

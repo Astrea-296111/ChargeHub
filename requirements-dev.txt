@@ -1,3 +1,4 @@
 # Optional tooling for scripts/check-contracts.py; runtime simulators use the Python standard library.
 PyYAML==6.0.3
 jsonschema==4.26.0
+openapi-spec-validator==0.7.2

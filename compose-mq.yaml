@@ -1,0 +1,72 @@
+# Optional development transport: docker compose -f compose.yaml -f compose-mq.yaml --env-file .local/dev.env up -d
+# The official release 5.5.1 has no published apache/rocketmq Docker tag; pin the available 5.5.0 image by digest.
+services:
+  mq-storage-init:
+    image: apache/rocketmq:5.5.0@sha256:7e8f6c9dbd9df742ed26ba69c00d4ad69e2f86a56f3ca7782ff8144dd0798132
+    user: "0:0"
+    command: ["sh", "-ec", "chown 3000:3000 /namesrv-logs /broker-logs /broker-store"]
+    volumes:
+      - mq-namesrv-logs:/namesrv-logs
+      - mq-broker-logs:/broker-logs
+      - mq-broker-store:/broker-store
+  mq-namesrv:
+    image: apache/rocketmq:5.5.0@sha256:7e8f6c9dbd9df742ed26ba69c00d4ad69e2f86a56f3ca7782ff8144dd0798132
+    environment:
+      JAVA_OPT_EXT: -Xms128m -Xmx128m -Xmn64m
+    command: ["sh", "mqnamesrv"]
+    depends_on:
+      mq-storage-init: {condition: service_completed_successfully}
+    volumes: [mq-namesrv-logs:/home/rocketmq/logs]
+    healthcheck:
+      test: ["CMD-SHELL", "sh mqadmin clusterList -n 127.0.0.1:9876 >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
+  mq-broker:
+    image: apache/rocketmq:5.5.0@sha256:7e8f6c9dbd9df742ed26ba69c00d4ad69e2f86a56f3ca7782ff8144dd0798132
+    environment:
+      NAMESRV_ADDR: mq-namesrv:9876
+      JAVA_OPT_EXT: -Xms512m -Xmx512m -Xmn128m
+    command: ["sh", "mqbroker", "--enable-proxy", "-c", "/home/rocketmq/chargehub-broker.conf", "-pc", "/home/rocketmq/chargehub-proxy.json"]
+    depends_on:
+      mq-storage-init: {condition: service_completed_successfully}
+      mq-namesrv: {condition: service_healthy}
+    volumes:
+      - ./deploy/rocketmq/broker.conf:/home/rocketmq/chargehub-broker.conf:ro
+      - ./deploy/rocketmq/proxy.json:/home/rocketmq/chargehub-proxy.json:ro
+      - mq-broker-store:/home/rocketmq/store
+      - mq-broker-logs:/home/rocketmq/logs
+    healthcheck:
+      test: ["CMD-SHELL", "sh mqadmin clusterList -n mq-namesrv:9876 | grep -q chargehub-broker"]
+      interval: 5s
+      timeout: 10s
+      retries: 25
+  mq-init:
+    image: apache/rocketmq:5.5.0@sha256:7e8f6c9dbd9df742ed26ba69c00d4ad69e2f86a56f3ca7782ff8144dd0798132
+    depends_on:
+      mq-broker: {condition: service_healthy}
+    command:
+      - sh
+      - -ec
+      - |
+        sh mqadmin updateTopic -n mq-namesrv:9876 -c ChargeHubCluster -t ChargeHubWorkflowV1 -a +message.type=NORMAL
+        sh mqadmin updateTopic -n mq-namesrv:9876 -c ChargeHubCluster -t ChargeHubSmoke -a +message.type=NORMAL
+        sh mqadmin updateSubGroup -n mq-namesrv:9876 -c ChargeHubCluster -g chargehub-workflow-v1 -r 4
+        sh mqadmin updateSubGroup -n mq-namesrv:9876 -c ChargeHubCluster -g chargehub-smoke -r 4
+  api:
+    environment:
+      CHARGEHUB_MESSAGING_MODE: rocketmq
+  worker:
+    environment:
+      SPRING_PROFILES_ACTIVE: dev,worker,mq
+      CHARGEHUB_MESSAGING_MODE: rocketmq
+      CHARGEHUB_MESSAGING_ENDPOINTS: mq-broker:8081
+      CHARGEHUB_MESSAGING_TLS_ENABLED: "false"
+      CHARGEHUB_MESSAGING_TOPIC: ChargeHubWorkflowV1
+      CHARGEHUB_MESSAGING_CONSUMER_GROUP: chargehub-workflow-v1
+    depends_on:
+      mq-init: {condition: service_completed_successfully}
+volumes:
+  mq-namesrv-logs:
+  mq-broker-store:
+  mq-broker-logs:

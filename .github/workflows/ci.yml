@@ -1,34 +1,143 @@
 name: verify
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  java-and-simulation:
+  unit-and-images:
+    name: Unit / independent simulators / reproducible images
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
+        with: {distribution: temurin, java-version: '21'}
       - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/cache@v4
         with:
-          python-version: '3.12'
-      - name: Build, unit and domain tests
+          path: |
+            .local/m2/repository
+            .local/maven
+          key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml', '.mvn/wrapper/maven-wrapper.properties') }}
+      - name: Unit and domain gates (database suites report skipped here)
         run: ./scripts/mvn.sh -B -ntp verify
-      - name: Independent simulator tests
+      - name: Independent durable simulator gates
         run: python3 -m unittest discover -s simulators -p 'test_*.py' -v
-      - name: Start complete dev topology
-        run: make up
-      - name: Real MySQL concurrency and transaction gates
-        run: make integration-test
-      - name: End-to-end monetary scenario and API checks
-        run: make demo acceptance faults test-invariants
-      - name: Test evidence
+      - name: Source-only multi-stage images, with optional private BuildKit trust/proxy mounts
+        run: |
+          python3 scripts/container/maven-settings.py
+          docker build --secret id=maven_settings,src=.local/container-maven-settings.xml --secret id=maven_ca,src=.local/container-maven-ca.crt --build-arg VCS_REF=${{ github.sha }} -t chargehub-app:1.0.0 .
+          docker build -t chargehub-simulator:1.0.0 simulators
+          docker save chargehub-app:1.0.0 chargehub-simulator:1.0.0 | gzip > /tmp/chargehub-images.tar.gz
+      - uses: actions/upload-artifact@v4
+        with: {name: candidate-images, path: /tmp/chargehub-images.tar.gz, retention-days: 2}
+      - name: Unit evidence (no environment files, dumps, tokens, or private build settings)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: chargehub-evidence
+          name: unit-evidence
+          path: '**/target/surefire-reports/*.xml'
+  backend-gates:
+    name: Backend / ${{ matrix.gate }}
+    needs: unit-and-images
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        gate: [mysql-suites, api-and-faults, rocketmq, redis-outage, backup-and-rollback]
+    env:
+      DOCKER_CONFIG: ${{ github.workspace }}/.local/docker
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '21'}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/cache@v4
+        with:
+          path: |
+            .local/m2/repository
+            .local/maven
+          key: maven-${{ runner.os }}-${{ hashFiles('**/pom.xml', '.mvn/wrapper/maven-wrapper.properties') }}
+      - name: Contract-validation dependencies
+        run: python3 -m pip install -r requirements-dev.txt
+      - uses: actions/download-artifact@v4
+        with: {name: candidate-images, path: /tmp/images}
+      - name: Load fixed candidate and generate job-local credentials
+        run: |
+          gzip -dc /tmp/images/chargehub-images.tar.gz | docker load
+          make env
+          docker compose --env-file .local/dev.env up -d --wait --wait-timeout 240
+          python3 scripts/wait-ready.py
+      - name: Every real MySQL suite and a dedicated disposable Redis
+        if: matrix.gate == 'mysql-suites'
+        run: python3 scripts/mysql-integration.py
+      - name: Real API, independent money/device facts and adverse recovery
+        if: matrix.gate == 'api-and-faults'
+        run: |
+          set -a
+          source .local/dev.env
+          set +a
+          python3 scripts/demo.py
+          python3 scripts/acceptance.py
+          python3 scripts/faults.py
+          python3 scripts/check-openapi.py
+          python3 scripts/check-contracts.py --login
+          python3 scripts/check-invariants.py
+      - name: RocketMQ native send/receive/Ack and A40-A42 crash/replay facts
+        if: matrix.gate == 'rocketmq'
+        run: |
+          docker compose --env-file .local/dev.env -f compose.yaml -f compose-mq.yaml up -d --wait --wait-timeout 240
+          python3 scripts/mq-smoke.py
+          set -a
+          source .local/dev.env
+          set +a
+          python3 scripts/demo.py
+          python3 scripts/mq-faults.py
+      - name: Dedicated project's actual Redis clear, stop and recovery
+        if: matrix.gate == 'redis-outage'
+        run: |
+          docker compose --env-file .local/dev.env down
+          docker compose -p chargehub-ci-redis --env-file .local/dev.env up -d --wait --wait-timeout 240
+          set -a
+          source .local/dev.env
+          set +a
+          python3 scripts/redis-acceptance.py --project chargehub-ci-redis
+      - name: Build the actual previous Git revision for migration compatibility
+        if: matrix.gate == 'backup-and-rollback'
+        run: |
+          mkdir -p .local/baseline-source/scripts/container
+          git archive f8dede3ce530ca72087e425a0b9c6d1741b553de | tar -x -C .local/baseline-source
+          cp Dockerfile .dockerignore .local/baseline-source/
+          cp scripts/container/Healthcheck.java .local/baseline-source/scripts/container/
+          python3 scripts/container/maven-settings.py
+          docker build --secret id=maven_settings,src=.local/container-maven-settings.xml --secret id=maven_ca,src=.local/container-maven-ca.crt --build-arg VCS_REF=f8dede3ce530ca72087e425a0b9c6d1741b553de -t chargehub-app:baseline-f8dede3 .local/baseline-source
+      - name: Backup to new database and old-image rollback on isolated upgraded schema
+        if: matrix.gate == 'backup-and-rollback'
+        run: |
+          python3 scripts/backup-restore-check.py
+          python3 scripts/deployment/rollback.py --candidate-image chargehub-app:1.0.0 --previous-image chargehub-app:baseline-f8dede3
+      - name: Explicitly allowlisted sanitized evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-${{ matrix.gate }}-evidence
           path: |
             **/target/surefire-reports/*.xml
-            .local/reports/
+            .local/reports/*.json
+            .local/reports/invariants.tsv
+          if-no-files-found: warn
+          retention-days: 14
+      - name: Stop job-local services
+        if: always()
+        run: |
+          docker compose --env-file .local/dev.env -f compose.yaml -f compose-mq.yaml down || true
+          docker compose -p chargehub-ci-redis --env-file .local/dev.env down || true

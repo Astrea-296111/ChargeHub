@@ -128,7 +128,7 @@ public class PaymentService {
         String type = str(event,"type");
         boolean first = false;
         if ("REFUND_SUCCESS".equals(type)) {
-            if ("FAILED_FINAL".equals(str(refund,"status"))) {
+            if (Set.of("FAILED_FINAL","FAILED_RETRYABLE").contains(str(refund,"status"))) {
                 // A previous definitive rejection released this amount. A later contradictory success is a reconciliation issue.
                 reject(event,"REFUND_FINAL_STATE_CONFLICT");
                 return refundResult(refund,false,false);
@@ -148,13 +148,19 @@ public class PaymentService {
                 }
             }
         } else if ("REFUND_FAILED".equals(type)) {
+            if(num(event,"attempt")>num(refund,"retry_attempt")){reject(event,"REFUND_ATTEMPT_MISMATCH");return refundResult(refund,false,false);}
+            if (num(event,"attempt") < num(refund,"retry_attempt")) {
+                processed(event);
+                return refundResult(refund,false,true); // an earlier attempt cannot release a new reservation or contradict its later success
+            }
             if ("SUCCESS".equals(str(refund,"status"))) {
                 reject(event,"REFUND_FINAL_STATE_CONFLICT");
                 return refundResult(refund,false,false);
             }
-            if (!Set.of("SUCCESS","FAILED_FINAL").contains(str(refund,"status"))) {
+            if (!Set.of("SUCCESS","FAILED_FINAL","FAILED_RETRYABLE").contains(str(refund,"status"))) {
                 db.update("UPDATE payment_order SET refund_reserved_fen=refund_reserved_fen-?,version=version+1 WHERE pay_no=?",num(refund,"amount_fen"),str(payment,"pay_no"));
-                db.update("UPDATE refund_order SET status='FAILED_FINAL',provider_refund_no=?,last_error='CHANNEL_REJECTED',next_query_at=NULL WHERE refund_no=?",provider,str(refund,"refund_no"));
+                String failedStatus=Boolean.TRUE.equals(event.get("retryable"))?"FAILED_RETRYABLE":"FAILED_FINAL";
+                db.update("UPDATE refund_order SET status=?,provider_refund_no=?,last_error='CHANNEL_REJECTED',next_query_at=NULL WHERE refund_no=?",failedStatus,provider,str(refund,"refund_no"));
             }
         } else {
             reject(event,"INVALID_REFUND_TYPE");
@@ -162,6 +168,25 @@ public class PaymentService {
         }
         processed(event);
         return refundResult(refund(str(refund,"refund_no"),false),first,true);
+    }
+
+    /** A new attempt uses the same refund number; only a verified retryable rejection releases/re-reserves cash. */
+    @Transactional
+    public Map<String,Object> prepareRefundRetry(String refundNo,Map<String,Object> queryResult) {
+        var initial=refund(refundNo,false);var payment=payment(str(initial,"pay_no"),true);var local=refund(refundNo,true);
+        if("SUCCESS".equals(str(local,"status")))return refundView(local);
+        if("FAILED_FINAL".equals(str(local,"status")))throw error(409,"REFUND_FAILED_FINAL","渠道最终拒绝，不允许重试或换退款号");
+        var fact=ChannelFinancialFact.parse(queryResult,true);
+        boolean same=refundNo.equals(fact.refundNo())&&str(local,"pay_no").equals(fact.payNo())&&num(local,"amount_fen")==fact.amountFen()
+                &&Objects.equals(str(payment,"currency"),fact.currency())&&Objects.equals(str(local,"provider_refund_no"),fact.providerBizNo());
+        if(!same)throw error(409,"REFUND_QUERY_MISMATCH","独立渠道查单与本地退款关系不一致");
+        if(!"FAILED_RETRYABLE".equals(str(local,"status")))return refundView(local); // UNKNOWN/INIT still holds its original amount
+        if(!"FAILED".equals(fact.status())||!fact.retryable())throw error(409,"REFUND_NOT_RETRYABLE","渠道未确认可重试的失败");
+        long amount=num(local,"amount_fen");
+        if(amount>num(payment,"captured_fen")-num(payment,"refund_reserved_fen")-num(payment,"refund_success_fen"))throw error(409,"REFUND_LIMIT","重试可用退款额度不足");
+        db.update("UPDATE payment_order SET refund_reserved_fen=refund_reserved_fen+?,version=version+1 WHERE pay_no=?",amount,str(payment,"pay_no"));
+        db.update("UPDATE refund_order SET status='INIT',retry_attempt=retry_attempt+1,last_error=NULL,next_query_at=UTC_TIMESTAMP(3) WHERE refund_no=?",refundNo);
+        return refundView(refund(refundNo,false));
     }
 
     public Map<String,Object> funds(String orderNo) {
@@ -207,7 +232,7 @@ public class PaymentService {
         var initial = refund(refundNo,false);
         payment(str(initial,"pay_no"),true);
         var refund = refund(refundNo,true);
-        if (!Set.of("SUCCESS","FAILED_FINAL").contains(str(refund,"status")))
+        if (!Set.of("SUCCESS","FAILED_FINAL","FAILED_RETRYABLE").contains(str(refund,"status")))
             db.update("UPDATE refund_order SET status=?,next_query_at=DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 5 SECOND) WHERE refund_no=?",
                     "PROCESSING".equals(status) ? "PROCESSING" : "UNKNOWN",refundNo);
         return refundResult(refund(refundNo,false),false,true);
@@ -222,7 +247,7 @@ public class PaymentService {
     public void markRefundUnknown(String refundNo, String lastError) {
         var initial = refund(refundNo,false);
         payment(str(initial,"pay_no"),true);
-        db.update("UPDATE refund_order SET status='UNKNOWN',last_error=?,next_query_at=DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 5 SECOND) WHERE refund_no=? AND status NOT IN ('SUCCESS','FAILED_FINAL')",
+        db.update("UPDATE refund_order SET status='UNKNOWN',last_error=?,next_query_at=DATE_ADD(UTC_TIMESTAMP(3),INTERVAL 5 SECOND) WHERE refund_no=? AND status NOT IN ('SUCCESS','FAILED_FINAL','FAILED_RETRYABLE')",
                 lastError == null ? null : lastError.substring(0,Math.min(128,lastError.length())),refundNo);
     }
 
@@ -246,7 +271,7 @@ public class PaymentService {
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public Map<String,Object> sendRefund(String refundNo) {
         var r = refund(refundNo,false);
-        return invoke("/mock-gateway/v1/refunds",Map.of("outRefundNo",refundNo,"outTradeNo",str(r,"pay_no"),"amountFen",num(r,"amount_fen"),"currency","CNY"));
+        return invoke(num(r,"retry_attempt")>0?"/mock-gateway/v1/refunds/retry":"/mock-gateway/v1/refunds",Map.of("outRefundNo",refundNo,"outTradeNo",str(r,"pay_no"),"amountFen",num(r,"amount_fen"),"currency","CNY","attempt",num(r,"retry_attempt")));
     }
 
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
@@ -305,6 +330,7 @@ public class PaymentService {
         if(refund) event.put("refundNo",refundNo);
         event.put("providerBizNo",provider); event.put("amountFen",amount(input.get("amountFen")));
         event.put("currency",str(input,"currency")); event.put("occurredAt",str(input,"occurredAt"));
+        if(refund && "REFUND_FAILED".equals(type)){event.put("retryable",Boolean.TRUE.equals(input.get("retryable")));event.put("attempt",num(input,"attempt"));}
         eventTime(event);
         return event;
     }

@@ -30,7 +30,7 @@ public class SecurityConfig {
                         .requestMatchers("/integrations/**", "/actuator/health", "/actuator/health/**", "/error").permitAll()
                         .requestMatchers("/actuator/prometheus").hasAnyRole("OPS", "ADMIN")
                         .requestMatchers("/v1/**").authenticated()
-                        .requestMatchers("/", "/index.html", "/app.js", "/style.css", "/favicon.ico").permitAll()
+                        .requestMatchers("/", "/index.html", "/app.js", "/style.css", "/favicon.ico", "/operations.html", "/operations.js").permitAll()
                         .anyRequest().denyAll())
                 .exceptionHandling(errors -> errors
                         .authenticationEntryPoint((request, response, error) -> writeError(response, 401, "UNAUTHENTICATED", "请先登录"))

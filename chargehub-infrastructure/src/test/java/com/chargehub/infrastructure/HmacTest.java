@@ -54,6 +54,31 @@ class HmacTest {
         verifyNoInteractions(db);
     }
 
+    @Test void rotationAcceptsExplicitOldAndNewKeysButRejectsOtherIntegrationOwner() {
+        var environment = new org.springframework.mock.env.MockEnvironment()
+                .withProperty("chargehub.payment-key-id", "payment-new")
+                .withProperty("chargehub.payment-key", SECRET)
+                .withProperty("chargehub.integration-keys.payment-old.owner", "payment")
+                .withProperty("chargehub.integration-keys.payment-old.secret", "previous-payment-key-1234567890")
+                .withProperty("chargehub.integration-keys.device-v2.owner", "device")
+                .withProperty("chargehub.integration-keys.device-v2.secret", "independent-device-key-1234567890");
+        var hmac = new Hmac(mock(Db.class), environment,
+                Clock.fixed(Instant.ofEpochSecond(Long.parseLong(TIMESTAMP)), ZoneOffset.UTC));
+        assertEquals("payment-new", hmac.headers("POST", PATH, BODY, "payment").get("X-Key-Id"));
+        for (String id : new String[]{"payment-old", "payment-new"}) {
+            var headers = hmac.headers("POST", PATH, BODY, id);
+            var request = mock(HttpServletRequest.class);
+            when(request.getMethod()).thenReturn("POST");
+            when(request.getRequestURI()).thenReturn(PATH);
+            headers.forEach((name, value) -> when(request.getHeader(name)).thenReturn(value));
+            hmac.verify(request, BODY, "payment");
+        }
+        var headers = hmac.headers("POST", PATH, BODY, "device-v2");
+        var request = mock(HttpServletRequest.class);
+        headers.forEach((name, value) -> when(request.getHeader(name)).thenReturn(value));
+        assertEquals(401, assertThrows(BusinessException.class, () -> hmac.verify(request, BODY, "payment")).status());
+    }
+
     private Hmac hmac(Db db) {
         var environment = mock(Environment.class);
         when(environment.getProperty("chargehub.payment-key-id", "payment")).thenReturn("payment");

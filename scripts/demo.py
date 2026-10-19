@@ -110,7 +110,10 @@ def reset_faults(gateway, device):
                 'duplicateNotificationCount': 0, 'notificationDelayMs': 0,
                 'deviceStartTimeoutButRunning': False, 'deviceStopAckLost': False,
                 'meterReorderWindow': 0, 'dropBoundarySample': False,
-                'injectMeterRollback': False, 'temporaryFailure': False, 'rejectRefund': False}
+                'injectMeterRollback': False, 'temporaryFailure': False, 'rejectRefund': False,
+                'deviceStartRejected': False, 'deviceQueryUnknown': False, 'dropMeterSeqNos': [],
+                'refundRetryableFailure': False, 'badPaymentNotificationAmountFen': 0,
+                'badPaymentNotificationCurrency': ''}
     gateway.call('/dev/faults', disabled)
     device.call('/dev/faults', disabled)
 

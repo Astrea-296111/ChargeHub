@@ -28,6 +28,11 @@ class PaymentGateway:
             status TEXT NOT NULL, occurred_at TEXT NOT NULL, event_id TEXT NOT NULL);
         ''')
 
+        columns = {r['name'] for r in self.store.conn.execute('PRAGMA table_info(refunds)')}
+        for name in ('retryable', 'attempt'):
+            if name not in columns:
+                self.store.conn.execute('ALTER TABLE refunds ADD COLUMN ' + name + ' INTEGER NOT NULL DEFAULT 0')
+
     def now(self):
         return os.environ.get('CHARGEHUB_FIXED_TIME') or utc_now()
 
@@ -44,7 +49,8 @@ class PaymentGateway:
                 'outTradeNo': row['out_trade_no'], 'payNo': row['out_trade_no'],
                 'providerRefundNo': row['provider_no'], 'providerBizNo': row['provider_no'],
                 'amountFen': row['amount'], 'currency': row['currency'], 'status': row['status'],
-                'occurredAt': row['occurred_at'], 'channelEventId': row['event_id']}
+                'occurredAt': row['occurred_at'], 'channelEventId': row['event_id'],
+                'retryable': bool(row['retryable']), 'attempt': row['attempt']}
 
     def payment(self, db, pay_no):
         row = db.execute('SELECT * FROM payments WHERE out_trade_no=?', (pay_no,)).fetchone()
@@ -70,6 +76,8 @@ class PaymentGateway:
             return self.close(body['outTradeNo'])
         if path == prefix + 'refunds':
             return self.refund(body)
+        if path == prefix + 'refunds/retry':
+            return self.refund(body, retry=True)
         if path == prefix + 'refunds/query':
             with self.store.lock:
                 row = self.store.conn.execute('SELECT * FROM refunds WHERE out_refund_no=?', (body['outRefundNo'],)).fetchone()
@@ -113,6 +121,11 @@ class PaymentGateway:
                 db.execute("UPDATE payments SET status='SUCCESS',occurred_at=?,event_id=? WHERE out_trade_no=?", (now,event_id,pay_no))
                 event = {'channelEventId': event_id, 'type': 'PAYMENT_SUCCESS', 'payNo': pay_no,
                          'providerBizNo': row['provider_no'], 'amountFen': row['amount'], 'currency': row['currency'], 'occurredAt': now}
+                faults = self.store.faults()
+                if faults.get('badPaymentNotificationAmountFen', 0) > 0:
+                    event['amountFen'] = faults['badPaymentNotificationAmountFen']
+                if faults.get('badPaymentNotificationCurrency', ''):
+                    event['currency'] = faults['badPaymentNotificationCurrency']
                 self.store.notify(db, row['notification_url'], event)
             result = self.payment_view(self.payment(db, pay_no))
             result['_dropResponse'] = bool(self.store.faults().get('dropResponseAfterCommit'))
@@ -128,31 +141,48 @@ class PaymentGateway:
                     'payNo': pay_no, 'providerBizNo': row['provider_no'], 'amountFen': row['amount'], 'currency': row['currency'], 'occurredAt': now})
             return self.payment_view(self.payment(db, pay_no))
 
-    def refund(self, body):
+    def refund(self, body, retry=False):
         refund_no, pay_no = str(uuid.UUID(body['outRefundNo'])), body['outTradeNo']
         amount = body['amountFen']
         if type(amount) is not int or amount <= 0 or body.get('currency') != 'CNY':
             raise Fault(400, 'INVALID_AMOUNT', 'Positive integer CNY amount required')
+        attempt = body.get('attempt', 0)
+        if type(attempt) is not int or attempt < 0:
+            raise Fault(400, 'INVALID_ATTEMPT', 'Attempt must be a nonnegative integer')
         with self.store.tx() as db:
             old = db.execute('SELECT * FROM refunds WHERE out_refund_no=?', (refund_no,)).fetchone()
             if old:
                 if old['out_trade_no'] != pay_no or old['amount'] != amount or old['currency'] != body['currency']:
                     raise Fault(409, 'IDEMPOTENCY_CONFLICT', 'Refund identifier has different parameters')
-                return self.refund_view(old)
+                if not retry or attempt <= old['attempt'] or old['status'] == 'SUCCESS':
+                    return self.refund_view(old)
+                if old['status'] != 'FAILED' or not old['retryable']:
+                    raise Fault(409, 'REFUND_FINAL', 'Final channel refusal cannot be retried')
+                if attempt != old['attempt'] + 1:
+                    raise Fault(409, 'ATTEMPT_CONFLICT', 'Retry must use the next original-refund attempt')
+            elif retry:
+                raise Fault(404, 'NOT_FOUND', 'Original channel refund does not exist')
             faults = self.store.faults()
             if faults.get('temporaryFailure'):
                 raise Fault(503, 'TEMPORARILY_UNAVAILABLE', 'Injected temporary channel failure')
             payment = self.payment(db, pay_no)
             if payment['status'] != 'SUCCESS' or payment['refunded'] + amount > payment['amount']:
                 raise Fault(409, 'REFUND_LIMIT', 'Refund exceeds available captured channel amount')
-            now, event_id, provider = self.now(), str(uuid.uuid4()), 'mock-refund-' + str(uuid.uuid4())
-            status = 'FAILED' if faults.get('rejectRefund') else 'SUCCESS'
-            db.execute('INSERT INTO refunds VALUES (?,?,?,?,?,?,?,?)', (refund_no,pay_no,provider,amount,'CNY',status,now,event_id))
+            now, event_id = self.now(), str(uuid.uuid4())
+            provider = old['provider_no'] if old else 'mock-refund-' + str(uuid.uuid4())
+            status = 'FAILED' if faults.get('rejectRefund') or faults.get('refundRetryableFailure') else 'SUCCESS'
+            retryable = status == 'FAILED' and bool(faults.get('refundRetryableFailure')) and not faults.get('rejectRefund')
+            if old:
+                db.execute('UPDATE refunds SET status=?,occurred_at=?,event_id=?,retryable=?,attempt=? WHERE out_refund_no=?',
+                           (status,now,event_id,int(retryable),attempt,refund_no))
+            else:
+                db.execute('INSERT INTO refunds(out_refund_no,out_trade_no,provider_no,amount,currency,status,occurred_at,event_id,retryable,attempt) VALUES (?,?,?,?,?,?,?,?,?,?)',
+                           (refund_no,pay_no,provider,amount,'CNY',status,now,event_id,int(retryable),attempt))
             if status == 'SUCCESS':
                 db.execute('UPDATE payments SET refunded=refunded+? WHERE out_trade_no=?', (amount,pay_no))
             self.store.notify(db, payment['notification_url'], {'channelEventId': event_id, 'type': 'REFUND_' + status,
                 'payNo': pay_no, 'refundNo': refund_no, 'providerBizNo': provider, 'amountFen': amount,
-                'currency': 'CNY', 'occurredAt': now})
+                'currency': 'CNY', 'occurredAt': now, 'retryable': retryable, 'attempt': attempt})
             result = self.refund_view(db.execute('SELECT * FROM refunds WHERE out_refund_no=?', (refund_no,)).fetchone())
             result['_dropResponse'] = bool(faults.get('dropResponseAfterCommit'))
             return result

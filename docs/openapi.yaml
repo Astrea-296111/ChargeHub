@@ -2,8 +2,7 @@ openapi: 3.0.3
 info:
   title: ChargeHub v1 运行接口
   version: 1.0.0
-  description: 根据当前控制器与服务返回字段维护的运行接口。设计基线保留在 docs/spec/04-openapi.yaml。金额为整数分、电量 Wh、时间 UTC、数据库 ID 为字符串；设备及支付均为独立模拟器。用户认证为数据库支持的不透明
-    Bearer Token。列表使用数据库 ID 游标分页，每页 1 至 100 项，默认 20 项。业务写请求要求 Idempotency-Key，登录、报价及签名回调除外。
+  description: 运行接口以当前Controller、DTO和返回字段为准，设计基线保留在docs/spec。金额整数分、电量Wh、UTC时间、数据库64位ID以字符串输出。JSON写请求拒绝未知DTO字段、重复字段、尾随内容及分数整数；登录4KiB、身份管理16KiB、其余JSON与集成回调64KiB。财务CSV文件10MiB/总请求11MiB。除登录、报价、签名回调外，业务写操作要求Idempotency-Key。角色与订单所有权在服务端核对；审计接口不暴露密码、令牌或密钥。
 servers:
 - url: http://127.0.0.1:8080
   description: Compose 开发 API；模拟环境
@@ -16,12 +15,19 @@ tags:
 - name: Benefit
 - name: Integration
 - name: Admin
+- name: IdentityAdmin
+- name: CatalogAdmin
+- name: BenefitAdmin
+- name: Finance
+- name: Metering
+- name: Operations
+- name: Outbox
 paths:
   /v1/auth/token:
     post:
       operationId: login
       summary: 演示账号登录
-      description: ''
+      description: 统一用户名/密码失败响应；未知用户仍执行dummy BCrypt。共享数据库限流默认账号10次/源地址60次每60秒，失败事务不重置预算；token1800秒到期，可撤销。
       tags:
       - Auth
       responses:
@@ -124,7 +130,7 @@ paths:
     get:
       operationId: listMyOrders
       summary: 查询自己的订单
-      description: 仅本人订单；按数据库 ID 递减。cursor 为上一页 nextCursor，省略则从最新开始。
+      description: 仅本人订单；按created_at DESC,id DESC复合排序。nextCursor为base64url(createdAt|id)不透明游标，客户端应原样回传；兼容本人历史订单ID游标。
       tags:
       - Order
       responses:
@@ -141,7 +147,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       parameters:
-      - $ref: '#/components/parameters/Cursor'
+      - name: cursor
+        in: query
+        schema:
+          type: string
+        description: 上一页返回的不透明复合游标，不应解析或构造。
       - $ref: '#/components/parameters/Limit'
   /v1/charge-orders/{orderNo}:
     get:
@@ -408,6 +418,7 @@ paths:
       operationId: receiveDeviceEvent
       summary: 设备事件收件
       description: 以 device 密钥验签并校验设备、枪和会话归属，原始事件持久化后处理；成功返回 accepted=true。重复事件不重复计量，冲突保留证据并进入 REVIEW。完整条件字段见 spec/05-events.schema.json。
+        原始UTF-8 JSON正文上限64KiB，包含未知长度请求；拒绝重复JSON字段。keyId可以是该owner下显式注册的轮换ID。 应用验签层支持显式keyId映射；当前独立模拟器仍为默认ID/单key，未实现或验证双端在线重叠轮换。
       tags:
       - Integration
       responses:
@@ -429,8 +440,8 @@ paths:
         required: true
         schema:
           type: string
-          enum:
-          - device
+          pattern: ^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$
+        description: 已配置且归属本集成owner的keyId；默认payment或device，允许显式重叠轮换。
       - name: X-Timestamp
         in: header
         required: true
@@ -457,8 +468,8 @@ paths:
     post:
       operationId: receiveMockPayment
       summary: 模拟渠道支付退款通知
-      description: 以 payment 密钥验签。付款及退款结果包含 valid；false 表示资金事实不匹配、差异已持久化，不能当作支付成功。firstCapture/firstRefund 标识首次生效。PAYMENT_CLOSED
-        可返回 accepted=true。同一事件号不同内容为 409；重试沿用原业务号并使用新签名 nonce。
+      description: 以 payment 密钥验签。付款及退款结果包含 valid；false 表示资金事实不匹配、差异已持久化，不能当作支付成功。firstCapture/firstRefund 标识首次生效。PAYMENT_CLOSED 可返回
+        accepted=true。同一事件号不同内容为 409；重试沿用原业务号并使用新签名 nonce。 原始UTF-8 JSON正文上限64KiB，包含未知长度请求；拒绝重复JSON字段。keyId可以是该owner下显式注册的轮换ID。 应用验签层支持显式keyId映射；当前独立模拟器仍为默认ID/单key，未实现或验证双端在线重叠轮换。
       tags:
       - Integration
       responses:
@@ -480,8 +491,8 @@ paths:
         required: true
         schema:
           type: string
-          enum:
-          - payment
+          pattern: ^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$
+        description: 已配置且归属本集成owner的keyId；默认payment或device，允许显式重叠轮换。
       - name: X-Timestamp
         in: header
         required: true
@@ -526,12 +537,22 @@ paths:
                 $ref: '#/components/schemas/TariffResponse'
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
+      - name: X-Operation-Reason
+        in: header
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description: 可选审计原因，未传时使用服务端明确的创建原因
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateTariffRequest'
+      x-required-roles:
+      - OPS
+      - ADMIN
   /v1/admin/tariffs/{tariffId}/publish:
     post:
       operationId: publishTariff
@@ -561,6 +582,16 @@ paths:
           pattern: ^[1-9][0-9]{0,18}$
           description: 数据库64位编号以字符串输出
       - $ref: '#/components/parameters/IdempotencyKey'
+      - name: X-Operation-Reason
+        in: header
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description: 可选审计原因，未传时使用服务端明确的发布原因
+      x-required-roles:
+      - OPS
+      - ADMIN
   /v1/admin/coupon-templates:
     post:
       operationId: createCouponTemplate
@@ -583,12 +614,53 @@ paths:
                 $ref: '#/components/schemas/AdminCouponTemplateResponse'
       parameters:
       - $ref: '#/components/parameters/IdempotencyKey'
+      - name: X-Operation-Reason
+        in: header
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description: 可选审计原因，未传时使用服务端明确的创建原因
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateCouponTemplateRequest'
+      x-required-roles:
+      - OPS
+      - ADMIN
+    get:
+      operationId: listAdminCouponTemplates
+      summary: 分页读取活动草稿与已发布模板
+      tags:
+      - BenefitAdmin
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCouponTemplatePageResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        description: 上一页nextCursor；此资源按数据库ID升序
+      - $ref: '#/components/parameters/Limit'
+      x-required-roles:
+      - OPS
+      - ADMIN
+      description: 服务端要求OPS 或 ADMIN。
   /v1/admin/coupon-templates/{templateId}/publish:
     post:
       operationId: publishCouponTemplate
@@ -618,12 +690,22 @@ paths:
           pattern: ^[1-9][0-9]{0,18}$
           description: 数据库64位编号以字符串输出
       - $ref: '#/components/parameters/IdempotencyKey'
+      - name: X-Operation-Reason
+        in: header
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 255
+        description: 可选审计原因，未传时使用服务端明确的发布原因
+      x-required-roles:
+      - OPS
+      - ADMIN
   /v1/admin/reconciliations:
     post:
       operationId: importReconciliation
       summary: FINANCE导入渠道账单
       description: FINANCE 或 ADMIN。UTF-8 CSV 最大 10MiB，字段、业务日期和时区严格验证；同批次相同哈希返回原结果，不同文件返回 409 RECONCILIATION_CONFLICT。仅保存双向差异及审计，不根据
-        CSV 直接入账。LOCAL_ONLY 为待完整性确认，批次为 INCOMPLETE。
+        CSV 直接入账。LOCAL_ONLY 为待完整性确认，批次为 INCOMPLETE。 总multipart请求上限11MiB。reason可选，默认财务导入渠道账单。后续恢复由独立财务接口执行，保留查询与完整性证据。
       tags:
       - Admin
       responses:
@@ -673,6 +755,11 @@ paths:
                   enum:
                   - Asia/Shanghai
                   - UTC
+                reason:
+                  type: string
+                  minLength: 1
+                  maxLength: 255
+                  default: 财务导入渠道账单
               required:
               - file
               - businessDate
@@ -680,6 +767,9 @@ paths:
               - channel
               - versionNo
               - sourceTimezone
+      x-required-roles:
+      - FINANCE
+      - ADMIN
   /v1/admin/reconciliation-items:
     get:
       operationId: listReconciliationItems
@@ -711,22 +801,24 @@ paths:
           - OPEN
           - PENDING_CONFIRMATION
           - RESOLVED
+      x-required-roles:
+      - FINANCE
+      - ADMIN
   /v1/admin/refunds/{refundNo}/retry:
     post:
       operationId: retryRefund
-      summary: FINANCE查单与受控重试
-      description: 只对可恢复单查单后按原退款号重试。SUCCESS安全返回已有结果；FAILED_FINAL返回409，不另造退款号。
+      summary: 按原退款号查单并恢复或重试
       tags:
-      - Admin
+      - Finance
       responses:
         '202':
-          description: 成功或已受理，按data中的状态继续查询
+          description: 成功；状态以data为准
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OperationAcceptedResponse'
+                $ref: '#/components/schemas/RefundAdminResultResponse'
         default:
-          description: 明确业务错误或技术错误
+          description: 明确业务拒绝或技术错误
           content:
             application/json:
               schema:
@@ -734,17 +826,21 @@ paths:
       parameters:
       - name: refundNo
         in: path
-        required: true
         schema:
           type: string
           format: uuid
+        required: true
       - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ReasonRequest'
+              $ref: '#/components/schemas/FinanceReasonRequest'
+      description: 服务端要求FINANCE 或 ADMIN。只重试渠道明确标为可重试的失败；UNKNOWN继续占原退款额度。FAILED_FINAL不另造退款号。返回已确认summary或完整资金视图。
+      x-required-roles:
+      - FINANCE
+      - ADMIN
   /v1/admin/outbox/{eventId}/replay:
     post:
       operationId: replayOutbox
@@ -779,6 +875,8 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ReasonRequest'
+      x-required-roles:
+      - ADMIN
   /v1/auth/me:
     get:
       operationId: currentUser
@@ -794,6 +892,1285 @@ paths:
                 $ref: '#/components/schemas/CurrentUserResponse'
         default:
           description: 明确业务错误或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /v1/auth/logout:
+    post:
+      operationId: logout
+      summary: 撤销当前或自己的全部会话
+      tags:
+      - Auth
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutResultResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+      description: 当前令牌撤销后再次使用它请求返回401；服务层保存幂等结果。审计不包含token或密码。
+  /v1/admin/users:
+    get:
+      operationId: listAdminUsers
+      summary: 只读用户分页
+      tags:
+      - IdentityAdmin
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserPageResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        description: 上一页nextCursor；此资源按数据库ID升序
+      - $ref: '#/components/parameters/Limit'
+      x-required-roles:
+      - ADMIN
+      description: 服务端要求ADMIN。
+  /v1/admin/users/{id}/roles:
+    post:
+      operationId: setUserRoles
+      summary: 替换用户服务端角色集合
+      tags:
+      - IdentityAdmin
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: id
+        in: path
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        required: true
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleChangeRequest'
+      description: 服务端要求ADMIN。拒绝空集合、未知或重复角色。事务串行化并重新检查操作者；禁止移除最后一个enabled ADMIN，__monitor__不能通过此接口修改。角色在现有token的下一次请求立即生效。
+      x-required-roles:
+      - ADMIN
+    put:
+      operationId: replaceUserRoles
+      summary: 替换用户服务端角色集合
+      tags:
+      - IdentityAdmin
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: id
+        in: path
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        required: true
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleChangeRequest'
+      description: 服务端要求ADMIN。拒绝空集合、未知或重复角色。事务串行化并重新检查操作者；禁止移除最后一个enabled ADMIN，__monitor__不能通过此接口修改。角色在现有token的下一次请求立即生效。
+      x-required-roles:
+      - ADMIN
+  /v1/admin/users/{id}/tokens/revoke:
+    post:
+      operationId: revokeUserTokens
+      summary: 撤销用户全部有效令牌
+      tags:
+      - IdentityAdmin
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRevocationResultResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: id
+        in: path
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        required: true
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReasonRequest'
+      x-required-roles:
+      - ADMIN
+      description: 服务端要求ADMIN。
+  /v1/stations/{id}:
+    get:
+      operationId: getStation
+      summary: 查询可用站点详情
+      tags:
+      - Station
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StationResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: id
+        in: path
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        required: true
+  /v1/connectors/{id}/tariff:
+    get:
+      operationId: getConnectorTariff
+      summary: 读取当前已发布费率快照
+      tags:
+      - Station
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DisplayTariffResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: id
+        in: path
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        required: true
+  /v1/admin/stations:
+    get:
+      operationId: listAdminStations
+      summary: 分页查看全部站点
+      tags:
+      - CatalogAdmin
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminStationPageResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        description: 上一页nextCursor；此资源按数据库ID升序
+      - $ref: '#/components/parameters/Limit'
+      x-required-roles:
+      - OPS
+      - ADMIN
+      description: 服务端要求OPS 或 ADMIN。
+    post:
+      operationId: createStation
+      summary: 创建站点
+      tags:
+      - CatalogAdmin
+      responses:
+        '201':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminStationRecordResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StationInput'
+      x-required-roles:
+      - OPS
+      - ADMIN
+      description: 服务端要求OPS 或 ADMIN。
+  /v1/admin/stations/{id}:
+    put:
+      operationId: updateStation
+      summary: 修改站点资料
+      tags:
+      - CatalogAdmin
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminStationRecordResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: id
+        in: path
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        required: true
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StationInput'
+      description: 服务端要求OPS 或 ADMIN。时区创建后不可修改。
+      x-required-roles:
+      - OPS
+      - ADMIN
+  /v1/admin/stations/{id}/status:
+    post:
+      operationId: setStationStatus
+      summary: 启用或停用站点
+      tags:
+      - CatalogAdmin
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminStationRecordResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: id
+        in: path
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        required: true
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnabledInput'
+      description: 服务端要求OPS 或 ADMIN。停用前必须没有活动会话或绑定订单。
+      x-required-roles:
+      - OPS
+      - ADMIN
+  /v1/admin/stations/{id}/connectors:
+    get:
+      operationId: listAdminConnectors
+      summary: 读取站点连接器运营状态
+      tags:
+      - CatalogAdmin
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminConnectorListResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: id
+        in: path
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        required: true
+      x-required-roles:
+      - OPS
+      - ADMIN
+      description: 服务端要求OPS 或 ADMIN。
+  /v1/admin/connectors:
+    post:
+      operationId: createConnector
+      summary: 创建连接器
+      tags:
+      - CatalogAdmin
+      responses:
+        '201':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminConnectorRecordResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorInput'
+      x-required-roles:
+      - OPS
+      - ADMIN
+      description: 服务端要求OPS 或 ADMIN。
+  /v1/admin/connectors/{id}:
+    put:
+      operationId: updateConnector
+      summary: 修改连接器归属与标识
+      tags:
+      - CatalogAdmin
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminConnectorRecordResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: id
+        in: path
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        required: true
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConnectorInput'
+      description: 服务端要求OPS 或 ADMIN。存在绑定或仍充电时拒绝修改。
+      x-required-roles:
+      - OPS
+      - ADMIN
+  /v1/admin/connectors/{id}/status:
+    post:
+      operationId: setConnectorStatus
+      summary: 启用或停用连接器
+      tags:
+      - CatalogAdmin
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminConnectorRecordResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: id
+        in: path
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        required: true
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnabledInput'
+      x-required-roles:
+      - OPS
+      - ADMIN
+      description: 服务端要求OPS 或 ADMIN。
+  /v1/admin/tariffs/{id}:
+    get:
+      operationId: getAdminTariff
+      summary: 读取费率版本
+      tags:
+      - CatalogAdmin
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TariffResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: id
+        in: path
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        required: true
+      x-required-roles:
+      - OPS
+      - ADMIN
+      description: 服务端要求OPS 或 ADMIN。
+    put:
+      operationId: updateTariffDraft
+      summary: 修改未发布费率草稿
+      tags:
+      - CatalogAdmin
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TariffDraftRecordResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: id
+        in: path
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        required: true
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TariffUpdateInput'
+      description: 服务端要求OPS 或 ADMIN。已发布版本不可变，发布时再次验证全天覆盖。此接口返回计划记录id，而GET返回公开DTO的tariffId。
+      x-required-roles:
+      - OPS
+      - ADMIN
+  /v1/admin/coupon-templates/{id}:
+    get:
+      operationId: getAdminCouponTemplate
+      summary: 读取优惠券模板运营记录
+      tags:
+      - BenefitAdmin
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCouponTemplateRecordResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: id
+        in: path
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        required: true
+      x-required-roles:
+      - OPS
+      - ADMIN
+      description: 服务端要求OPS 或 ADMIN。
+    put:
+      operationId: updateCouponTemplateDraft
+      summary: 修改未发布且未发券的模板
+      tags:
+      - BenefitAdmin
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminCouponTemplateRecordResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: id
+        in: path
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        required: true
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CouponTemplateUpdateInput'
+      x-required-roles:
+      - OPS
+      - ADMIN
+      description: 服务端要求OPS 或 ADMIN。
+  /v1/admin/memberships/{userId}:
+    get:
+      operationId: getMembership
+      summary: 读取用户会员记录
+      tags:
+      - BenefitAdmin
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipRecordResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: userId
+        in: path
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        required: true
+      x-required-roles:
+      - OPS
+      - ADMIN
+      description: 服务端要求OPS 或 ADMIN。
+    put:
+      operationId: grantMembership
+      summary: 开通或续期会员
+      tags:
+      - BenefitAdmin
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipRecordResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: userId
+        in: path
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        required: true
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembershipInput'
+      description: 服务端要求OPS 或 ADMIN。不重置已存在月额度，不改变历史预占。
+      x-required-roles:
+      - OPS
+      - ADMIN
+  /v1/admin/memberships/{userId}/status:
+    post:
+      operationId: setMembershipStatus
+      summary: 启停用户会员
+      tags:
+      - BenefitAdmin
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipRecordResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: userId
+        in: path
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        required: true
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EnabledInput'
+      x-required-roles:
+      - OPS
+      - ADMIN
+      description: 服务端要求OPS 或 ADMIN。
+  /v1/admin/finance/reconciliations/{batchId}:
+    get:
+      operationId: getFinanceBatch
+      summary: 读取对账批次与查询证据
+      tags:
+      - Finance
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinanceBatchDetailResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: batchId
+        in: path
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        required: true
+      x-required-roles:
+      - FINANCE
+      - ADMIN
+      description: 服务端要求FINANCE 或 ADMIN。
+  /v1/admin/finance/reconciliation-items/{itemId}:
+    get:
+      operationId: getFinanceItem
+      summary: 读取对账差异与查询证据
+      tags:
+      - Finance
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinanceItemDetailResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: itemId
+        in: path
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        required: true
+      x-required-roles:
+      - FINANCE
+      - ADMIN
+      description: 服务端要求FINANCE 或 ADMIN。
+  /v1/admin/finance/reconciliations/{batchId}/recover:
+    post:
+      operationId: recoverReconciliationBatch
+      summary: 查询独立渠道并恢复可验证差异
+      tags:
+      - Finance
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinanceBatchRecoveryResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: batchId
+        in: path
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        required: true
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinanceReasonRequest'
+      description: 服务端要求FINANCE 或 ADMIN。最多处理100条未解决差异。LOCAL_ONLY不会凭成功查单自动消失，必须核实完整原始账单；所有证据保留。
+      x-required-roles:
+      - FINANCE
+      - ADMIN
+  /v1/admin/finance/reconciliation-items/{itemId}/disposition:
+    post:
+      operationId: disposeReconciliationItem
+      summary: 记录差异人工处置
+      tags:
+      - Finance
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinanceItemDispositionResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: itemId
+        in: path
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        required: true
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinanceDispositionRequest'
+      description: 服务端要求FINANCE 或 ADMIN。KEEP_OPEN保留差异；CONFIRM_SUPERSEDED必须提供同渠道日期类型时区、版本更高、完整性已验证且匹配的replacementBatchId。不接受手工调平。
+      x-required-roles:
+      - FINANCE
+      - ADMIN
+  /v1/admin/finance/refunds/{refundNo}/retry:
+    post:
+      operationId: retryFinanceRefund
+      summary: 按原退款号查单并恢复或重试
+      tags:
+      - Finance
+      responses:
+        '202':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundAdminResultResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: refundNo
+        in: path
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinanceReasonRequest'
+      description: 服务端要求FINANCE 或 ADMIN。只重试渠道明确标为可重试的失败；UNKNOWN继续占原退款额度。FAILED_FINAL不另造退款号。返回已确认summary或完整资金视图。
+      x-required-roles:
+      - FINANCE
+      - ADMIN
+  /v1/admin/finance/refunds/{refundNo}/recover:
+    post:
+      operationId: recoverRefund
+      summary: 按原退款号查单并恢复或重试
+      tags:
+      - Finance
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefundAdminResultResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: refundNo
+        in: path
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FinanceReasonRequest'
+      description: 服务端要求FINANCE 或 ADMIN。只重试渠道明确标为可重试的失败；UNKNOWN继续占原退款额度。FAILED_FINAL不另造退款号。返回已确认summary或完整资金视图。
+      x-required-roles:
+      - FINANCE
+      - ADMIN
+  /v1/admin/charge-orders/{orderNo}/meter-review:
+    get:
+      operationId: getMeterReview
+      summary: 读取原始计量与复核证据
+      tags:
+      - Metering
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeterReviewResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: orderNo
+        in: path
+        schema:
+          type: string
+          format: uuid
+        required: true
+      description: 服务端要求OPS 或 FINANCE 或 ADMIN。仅展示已认证、持久化的设备事实；JSON证据列以编码文本返回。正式账单不可变。rawEvents/conflictingPayloads最多各1000条，proposals/replayRequests最多各100条。
+      x-required-roles:
+      - OPS
+      - FINANCE
+      - ADMIN
+  /v1/admin/charge-orders/{orderNo}/meter-replay:
+    post:
+      operationId: requestMeterReplay
+      summary: 申请设备原始样本补传
+      tags:
+      - Metering
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeterReplayAcceptedResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: orderNo
+        in: path
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeterReplayRequest'
+      description: 服务端要求OPS 或 FINANCE 或 ADMIN。闭区间fromSeq..toSeq最多10000个序号，不能超过设备finalSeq或当前已观察的最大序号；不能提交手工Wh或金额。
+      x-required-roles:
+      - OPS
+      - FINANCE
+      - ADMIN
+  /v1/admin/charge-orders/{orderNo}/meter-review/proposals:
+    post:
+      operationId: proposeMeterEvidence
+      summary: 提出基于已有原始事实的复核提案
+      tags:
+      - Metering
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeterProposalAcceptedResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: orderNo
+        in: path
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeterProposalRequest'
+      description: 服务端要求OPS 或 ADMIN。选择1至100条已持久化device_event编号；每个序号只能选择一条，不接受手写电量。
+      x-required-roles:
+      - OPS
+      - ADMIN
+  /v1/admin/charge-orders/{orderNo}/meter-review/proposals/{proposalNo}/decision:
+    post:
+      operationId: decideMeterProposal
+      summary: 由第二位人员批准或拒绝复核提案
+      tags:
+      - Metering
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeterDecisionResultResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: orderNo
+        in: path
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - name: proposalNo
+        in: path
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeterDecisionRequest'
+      description: 服务端要求FINANCE 或 ADMIN。提案者不能决定自己的提案；证据变更时须重提，APPROVE仍须通过完整序列/边界校验。账单已生成时拒绝改变决定。
+      x-required-roles:
+      - FINANCE
+      - ADMIN
+  /v1/admin/outbox:
+    get:
+      operationId: listOutboxTasks
+      summary: 按状态分页查看任务
+      tags:
+      - Outbox
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OutboxTaskPageResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: after
+        in: query
+        schema:
+          type: integer
+          format: int64
+          minimum: 0
+          default: 0
+        description: 升序数据库ID游标；首屏为0
+      - $ref: '#/components/parameters/Limit'
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - READY
+          - PROCESSING
+          - PUBLISHED
+          - DONE
+          - DEAD
+          default: DEAD
+      x-required-roles:
+      - ADMIN
+      description: 服务端要求ADMIN。
+  /v1/admin/charge-orders:
+    get:
+      operationId: listStaffOrders
+      summary: 分页查看运营订单摘要
+      tags:
+      - Operations
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StaffOrderPageResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: stationId
+        in: query
+        schema:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+      - name: status
+        in: query
+        schema:
+          type: string
+          enum:
+          - WAIT_PAY
+          - CANCELING
+          - START_PENDING
+          - CHARGING
+          - STOP_PENDING
+          - BILLING
+          - REVIEW
+          - EXCEPTION
+          - COMPLETED
+          - CANCELED
+      - name: after
+        in: query
+        schema:
+          type: integer
+          format: int64
+          minimum: 0
+          default: 0
+        description: 升序数据库ID游标；首屏为0
+      - $ref: '#/components/parameters/Limit'
+      x-required-roles:
+      - OPS
+      - FINANCE
+      - ADMIN
+      description: 服务端要求OPS 或 FINANCE 或 ADMIN。
+  /v1/admin/audits:
+    get:
+      operationId: listAudits
+      summary: 分页读取操作审计
+      tags:
+      - Operations
+      responses:
+        '200':
+          description: 成功；状态以data为准
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditPageResponse'
+        default:
+          description: 明确业务拒绝或技术错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      parameters:
+      - name: after
+        in: query
+        schema:
+          type: integer
+          format: int64
+          minimum: 0
+          default: 0
+        description: 升序数据库ID游标；首屏为0
+      - $ref: '#/components/parameters/Limit'
+      x-required-roles:
+      - FINANCE
+      - ADMIN
+      description: 服务端要求FINANCE 或 ADMIN。
+  /actuator/health:
+    get:
+      operationId: health
+      summary: 无敏感详情健康检查
+      tags:
+      - Operations
+      security: []
+      responses:
+        '200':
+          description: 健康
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+        '503':
+          description: 依赖不健康
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+  /actuator/prometheus:
+    get:
+      operationId: prometheusMetrics
+      summary: 受保护的Prometheus指标
+      tags:
+      - Operations
+      x-required-roles:
+      - OPS
+      - ADMIN
+      description: __monitor__保留账号仅可访问此路由、GET /v1/auth/me、POST /v1/auth/logout；不因OPS角色获得业务接口访问。响应不是ApiResponse封套。
+      responses:
+        '200':
+          description: Prometheus/OpenMetrics文本
+          content:
+            text/plain:
+              schema:
+                type: string
+            application/openmetrics-text:
+              schema:
+                type: string
+        default:
+          description: 认证或授权失败
           content:
             application/json:
               schema:
@@ -886,7 +2263,7 @@ components:
         roles:
           type: array
           items:
-            type: string
+            $ref: '#/components/schemas/Role'
       required:
       - accessToken
       - tokenType
@@ -1300,9 +2677,10 @@ components:
           enum:
           - INIT
           - PROCESSING
+          - UNKNOWN
           - SUCCESS
           - FAILED_FINAL
-          - UNKNOWN
+          - FAILED_RETRYABLE
         amountFen:
           type: integer
           format: int64
@@ -1855,6 +3233,46 @@ components:
       - connectorId
       - eventType
       - occurredAt
+      oneOf:
+      - properties:
+          eventType:
+            type: string
+            enum:
+            - STATUS
+        required:
+        - deviceStatus
+      - properties:
+          eventType:
+            type: string
+            enum:
+            - STARTED
+        required:
+        - sessionNo
+        - seqNo
+        - meterWh
+        - sampleKind
+      - properties:
+          eventType:
+            type: string
+            enum:
+            - METER
+        required:
+        - sessionNo
+        - seqNo
+        - meterWh
+        - sampleKind
+      - properties:
+          eventType:
+            type: string
+            enum:
+            - STOPPED
+        required:
+        - sessionNo
+        - seqNo
+        - meterWh
+        - sampleKind
+        - finalSeq
+      description: STARTED固定seqNo=0；STOPPED的finalSeq等于其seqNo。业务归属、单调性与边界校验由服务端执行，不能仅由结构schema证明。
     PaymentNotification:
       type: object
       additionalProperties: false
@@ -1884,7 +3302,7 @@ components:
         amountFen:
           type: integer
           format: int64
-          minimum: 0
+          minimum: 1
           description: 金额单位为分，禁止浮点元
         currency:
           type: string
@@ -1893,6 +3311,13 @@ components:
         occurredAt:
           type: string
           format: date-time
+        retryable:
+          type: boolean
+          default: false
+        attempt:
+          type: integer
+          format: int64
+          minimum: 0
       required:
       - channelEventId
       - type
@@ -1901,6 +3326,22 @@ components:
       - amountFen
       - currency
       - occurredAt
+      description: REFUND_SUCCESS/REFUND_FAILED必须提供refundNo；只有REFUND_FAILED使用retryable与attempt。业务事件时间不代替HMAC系统时间窗口。
+      oneOf:
+      - properties:
+          type:
+            type: string
+            enum:
+            - PAYMENT_SUCCESS
+            - PAYMENT_CLOSED
+      - properties:
+          type:
+            type: string
+            enum:
+            - REFUND_SUCCESS
+            - REFUND_FAILED
+        required:
+        - refundNo
     TokenResponse:
       type: object
       additionalProperties: false
@@ -2611,6 +4052,7 @@ components:
           - UNKNOWN
           - SUCCESS
           - FAILED_FINAL
+          - FAILED_RETRYABLE
         providerRefundNo:
           type: string
           nullable: true
@@ -2631,6 +4073,10 @@ components:
           type: boolean
         valid:
           type: boolean
+        retryAttempt:
+          type: integer
+          format: int64
+          minimum: 0
       required:
       - id
       - refundNo
@@ -2646,6 +4092,7 @@ components:
       - updatedAt
       - firstRefund
       - valid
+      - retryAttempt
     NotificationResult:
       oneOf:
       - $ref: '#/components/schemas/PaymentFactResult'
@@ -2671,6 +4118,2640 @@ components:
       - message
       - data
       - requestId
+    Role:
+      type: string
+      enum:
+      - CUSTOMER
+      - OPS
+      - FINANCE
+      - ADMIN
+    AdminUser:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 数据库64位编号以字符串输出
+        username:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+            enum:
+            - CUSTOMER
+            - OPS
+            - FINANCE
+            - ADMIN
+        enabled:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - username
+      - roles
+      - enabled
+      - createdAt
+    AdminUserPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminUser'
+        nextCursor:
+          type: string
+          nullable: true
+      required:
+      - items
+      - nextCursor
+    RoleChangeRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+          minItems: 1
+          maxItems: 4
+          uniqueItems: true
+        reason:
+          type: string
+          minLength: 5
+          maxLength: 255
+      required:
+      - roles
+      - reason
+    LogoutRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        allSessions:
+          type: boolean
+          default: false
+        reason:
+          type: string
+          minLength: 5
+          maxLength: 255
+      required:
+      - reason
+    LogoutResult:
+      type: object
+      additionalProperties: false
+      properties:
+        revoked:
+          type: boolean
+          enum:
+          - true
+        allSessions:
+          type: boolean
+        revokedCount:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - revoked
+      - allSessions
+      - revokedCount
+    TokenRevocationResult:
+      type: object
+      additionalProperties: false
+      properties:
+        userId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        revokedCount:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - userId
+      - revokedCount
+    LogoutResultResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/LogoutResult'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    AdminUserPageResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/AdminUserPage'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    AdminUserResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/AdminUser'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    TokenRevocationResultResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/TokenRevocationResult'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    AdminStationRecord:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        stationCode:
+          type: string
+          maxLength: 40
+        name:
+          type: string
+          maxLength: 120
+        address:
+          type: string
+          maxLength: 255
+        timezone:
+          type: string
+          maxLength: 40
+        activeTariffId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+          nullable: true
+        status:
+          type: string
+          enum:
+          - ENABLED
+          - DISABLED
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - stationCode
+      - name
+      - address
+      - timezone
+      - activeTariffId
+      - status
+      - createdAt
+    AdminStationPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminStationRecord'
+        nextCursor:
+          type: string
+          nullable: true
+      required:
+      - items
+      - nextCursor
+    AdminConnectorRecord:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        stationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        deviceId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        connectorCode:
+          type: string
+          maxLength: 40
+        status:
+          type: string
+          maxLength: 24
+        activeOrderNo:
+          type: string
+          format: uuid
+          nullable: true
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+        lastSeenAt:
+          type: string
+          format: date-time
+          nullable: true
+        reportedDeviceStatus:
+          type: string
+          maxLength: 24
+          nullable: true
+        reportedStatusAt:
+          type: string
+          format: date-time
+          nullable: true
+        operationalEnabled:
+          type: integer
+          format: int64
+          minimum: 0
+          enum:
+          - 0
+          - 1
+      required:
+      - id
+      - stationId
+      - deviceId
+      - connectorCode
+      - status
+      - activeOrderNo
+      - version
+      - lastSeenAt
+      - reportedDeviceStatus
+      - reportedStatusAt
+      - operationalEnabled
+    AdminConnectorList:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminConnectorRecord'
+      required:
+      - items
+    StationInput:
+      type: object
+      additionalProperties: false
+      properties:
+        stationCode:
+          type: string
+          pattern: ^[A-Za-z0-9._:-]{1,40}$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        address:
+          type: string
+          minLength: 1
+          maxLength: 255
+        timezone:
+          type: string
+          enum:
+          - Asia/Shanghai
+        reason:
+          type: string
+          minLength: 5
+          maxLength: 255
+      required:
+      - stationCode
+      - name
+      - address
+      - timezone
+      - reason
+    ConnectorInput:
+      type: object
+      additionalProperties: false
+      properties:
+        stationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        deviceId:
+          type: string
+          pattern: ^[A-Za-z0-9._:-]{1,64}$
+        connectorCode:
+          type: string
+          pattern: ^[A-Za-z0-9._:-]{1,40}$
+        reason:
+          type: string
+          minLength: 5
+          maxLength: 255
+      required:
+      - stationId
+      - deviceId
+      - connectorCode
+      - reason
+    EnabledInput:
+      type: object
+      additionalProperties: false
+      properties:
+        enabled:
+          type: boolean
+        reason:
+          type: string
+          minLength: 5
+          maxLength: 255
+      required:
+      - enabled
+      - reason
+    TariffUpdateInput:
+      type: object
+      additionalProperties: false
+      properties:
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/TariffSlot'
+          minItems: 1
+          maxItems: 48
+        reason:
+          type: string
+          minLength: 5
+          maxLength: 255
+      required:
+      - slots
+      - reason
+    TariffDraftRecord:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        stationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        versionNo:
+          type: integer
+          format: int64
+          minimum: 0
+        status:
+          type: string
+          enum:
+          - DRAFT
+        ruleHash:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/TariffSlot'
+      required:
+      - id
+      - stationId
+      - versionNo
+      - status
+      - ruleHash
+      - publishedAt
+      - createdAt
+      - slots
+    DisplayTariff:
+      type: object
+      additionalProperties: false
+      properties:
+        tariffId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        stationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        tariffVersion:
+          type: integer
+          format: int64
+          minimum: 1
+        timezone:
+          type: string
+          enum:
+          - Asia/Shanghai
+        ruleHash:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        slots:
+          type: array
+          items:
+            $ref: '#/components/schemas/TariffSlot'
+      required:
+      - tariffId
+      - stationId
+      - tariffVersion
+      - timezone
+      - ruleHash
+      - slots
+    DisplayTariffResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/DisplayTariff'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    AdminStationPageResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/AdminStationPage'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    AdminStationRecordResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/AdminStationRecord'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    AdminConnectorListResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/AdminConnectorList'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    AdminConnectorRecordResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/AdminConnectorRecord'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    TariffDraftRecordResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/TariffDraftRecord'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    AdminCouponTemplateRecord:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        name:
+          type: string
+          maxLength: 120
+        status:
+          type: string
+          enum:
+          - DRAFT
+          - PUBLISHED
+        claimFrom:
+          type: string
+          format: date-time
+        claimUntil:
+          type: string
+          format: date-time
+        useValidFrom:
+          type: string
+          format: date-time
+        useValidUntil:
+          type: string
+          format: date-time
+        thresholdFen:
+          type: integer
+          format: int64
+          minimum: 0
+        discountFen:
+          type: integer
+          format: int64
+          minimum: 0
+        totalCount:
+          type: integer
+          format: int64
+          minimum: 0
+        issuedCount:
+          type: integer
+          format: int64
+          minimum: 0
+        scopeSnapshot:
+          type: string
+          description: 原始数据库JSON的编码文本；保留证据字节语义，不伪装为已解析对象
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - name
+      - status
+      - claimFrom
+      - claimUntil
+      - useValidFrom
+      - useValidUntil
+      - thresholdFen
+      - discountFen
+      - totalCount
+      - issuedCount
+      - scopeSnapshot
+      - createdAt
+    AdminCouponTemplatePage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminCouponTemplateRecord'
+        nextCursor:
+          type: string
+          nullable: true
+      required:
+      - items
+      - nextCursor
+    CouponTemplateUpdateInput:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        claimFrom:
+          type: string
+          format: date-time
+        claimUntil:
+          type: string
+          format: date-time
+        useValidFrom:
+          type: string
+          format: date-time
+        useValidUntil:
+          type: string
+          format: date-time
+        thresholdFen:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000
+        discountFen:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 10000
+        totalCount:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000
+        scope:
+          type: string
+          enum:
+          - ALL_STATIONS
+        reason:
+          type: string
+          minLength: 5
+          maxLength: 255
+      required:
+      - name
+      - claimFrom
+      - claimUntil
+      - useValidFrom
+      - useValidUntil
+      - thresholdFen
+      - discountFen
+      - totalCount
+      - scope
+      - reason
+    MembershipRecord:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        userId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        planCode:
+          type: string
+          maxLength: 40
+        validFrom:
+          type: string
+          format: date-time
+        validUntil:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum:
+          - ACTIVE
+          - INACTIVE
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - userId
+      - planCode
+      - validFrom
+      - validUntil
+      - status
+      - createdAt
+    MembershipInput:
+      type: object
+      additionalProperties: false
+      properties:
+        planCode:
+          type: string
+          enum:
+          - DEMO_MONTHLY
+        validFrom:
+          type: string
+          format: date-time
+        validUntil:
+          type: string
+          format: date-time
+        reason:
+          type: string
+          minLength: 5
+          maxLength: 255
+      required:
+      - planCode
+      - validFrom
+      - validUntil
+      - reason
+    AdminCouponTemplatePageResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/AdminCouponTemplatePage'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    AdminCouponTemplateRecordResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/AdminCouponTemplateRecord'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    MembershipRecordResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/MembershipRecord'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    FinanceEvidence:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        operationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        operationAttempt:
+          type: integer
+          format: int64
+          minimum: 0
+        batchId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+          nullable: true
+        itemId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+          nullable: true
+        bizNo:
+          type: string
+          format: uuid
+          nullable: true
+        evidenceType:
+          type: string
+          maxLength: 32
+        requestPayload:
+          type: string
+          description: 原始数据库JSON的编码文本；保留证据字节语义，不伪装为已解析对象
+        responsePayload:
+          type: string
+          description: 原始数据库JSON的编码文本；保留证据字节语义，不伪装为已解析对象
+          nullable: true
+        responseHash:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+          nullable: true
+        verified:
+          type: integer
+          format: int64
+          minimum: 0
+          enum:
+          - 0
+          - 1
+        outcome:
+          type: string
+          maxLength: 64
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - operationId
+      - operationAttempt
+      - batchId
+      - itemId
+      - bizNo
+      - evidenceType
+      - requestPayload
+      - responsePayload
+      - responseHash
+      - verified
+      - outcome
+      - createdAt
+    FinanceBatchDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        channel:
+          type: string
+          maxLength: 24
+        businessDate:
+          type: string
+          format: date
+        billType:
+          type: string
+          maxLength: 16
+        sourceTimezone:
+          type: string
+          maxLength: 40
+        versionNo:
+          type: integer
+          format: int64
+          minimum: 0
+        fileHash:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        status:
+          type: string
+          enum:
+          - MATCHED
+          - DIFF
+          - INCOMPLETE
+        totalCount:
+          type: integer
+          format: int64
+          minimum: 0
+        diffCount:
+          type: integer
+          format: int64
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        sourceComplete:
+          type: integer
+          format: int64
+          minimum: 0
+          enum:
+          - 0
+          - 1
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/FinanceEvidence'
+      required:
+      - id
+      - channel
+      - businessDate
+      - billType
+      - sourceTimezone
+      - versionNo
+      - fileHash
+      - status
+      - totalCount
+      - diffCount
+      - createdAt
+      - sourceComplete
+      - evidence
+    FinanceItemDetail:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        batchId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        providerBizNo:
+          type: string
+          maxLength: 64
+        bizNo:
+          type: string
+          format: uuid
+          nullable: true
+        orderNo:
+          type: string
+          format: uuid
+          nullable: true
+        localAmountFen:
+          type: integer
+          format: int64
+          minimum: 0
+          nullable: true
+        channelAmountFen:
+          type: integer
+          format: int64
+          minimum: 0
+          nullable: true
+        currency:
+          type: string
+          maxLength: 3
+        diffType:
+          type: string
+          maxLength: 40
+        status:
+          type: string
+          enum:
+          - OPEN
+          - PENDING_CONFIRMATION
+          - RESOLVED
+        resolution:
+          type: string
+          maxLength: 255
+          nullable: true
+        resolvedBy:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,18})$
+          description: 64位编号字符串；0表示系统操作者或没有历史覆盖点
+          nullable: true
+        resolvedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        channelSnapshot:
+          type: string
+          description: 原始数据库JSON的编码文本；保留证据字节语义，不伪装为已解析对象
+          nullable: true
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/FinanceEvidence'
+      required:
+      - id
+      - batchId
+      - providerBizNo
+      - bizNo
+      - orderNo
+      - localAmountFen
+      - channelAmountFen
+      - currency
+      - diffType
+      - status
+      - resolution
+      - resolvedBy
+      - resolvedAt
+      - createdAt
+      - channelSnapshot
+      - evidence
+    PaymentRecord:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        payNo:
+          type: string
+          format: uuid
+        orderNo:
+          type: string
+          format: uuid
+        channel:
+          type: string
+          enum:
+          - MOCK
+        providerTradeNo:
+          type: string
+          maxLength: 64
+          nullable: true
+        status:
+          type: string
+          enum:
+          - INIT
+          - PENDING
+          - SUCCESS
+          - CLOSE_PENDING
+          - CLOSED
+          - UNKNOWN
+        amountFen:
+          type: integer
+          format: int64
+          minimum: 0
+        capturedFen:
+          type: integer
+          format: int64
+          minimum: 0
+        refundReservedFen:
+          type: integer
+          format: int64
+          minimum: 0
+        refundSuccessFen:
+          type: integer
+          format: int64
+          minimum: 0
+        currency:
+          type: string
+          enum:
+          - CNY
+        capturedAt:
+          type: string
+          format: date-time
+          nullable: true
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - payNo
+      - orderNo
+      - channel
+      - providerTradeNo
+      - status
+      - amountFen
+      - capturedFen
+      - refundReservedFen
+      - refundSuccessFen
+      - currency
+      - capturedAt
+      - version
+      - createdAt
+      - updatedAt
+    RefundRecord:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        refundNo:
+          type: string
+          format: uuid
+        payNo:
+          type: string
+          format: uuid
+        orderNo:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          enum:
+          - FULL_CANCEL
+          - BALANCE
+        amountFen:
+          type: integer
+          format: int64
+          minimum: 0
+        status:
+          type: string
+          enum:
+          - INIT
+          - PROCESSING
+          - UNKNOWN
+          - SUCCESS
+          - FAILED_FINAL
+          - FAILED_RETRYABLE
+        providerRefundNo:
+          type: string
+          maxLength: 64
+          nullable: true
+        lastError:
+          type: string
+          maxLength: 128
+          nullable: true
+        nextQueryAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        retryAttempt:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - id
+      - refundNo
+      - payNo
+      - orderNo
+      - reason
+      - amountFen
+      - status
+      - providerRefundNo
+      - lastError
+      - nextQueryAt
+      - createdAt
+      - updatedAt
+      - retryAttempt
+    CashEntryRecord:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        orderNo:
+          type: string
+          format: uuid
+        bizType:
+          type: string
+          enum:
+          - CAPTURE
+          - REFUND
+        bizNo:
+          type: string
+          format: uuid
+        channel:
+          type: string
+          enum:
+          - MOCK
+        providerBizNo:
+          type: string
+          maxLength: 64
+        amountFen:
+          type: integer
+          format: int64
+          minimum: 0
+        currency:
+          type: string
+          enum:
+          - CNY
+        occurredAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - orderNo
+      - bizType
+      - bizNo
+      - channel
+      - providerBizNo
+      - amountFen
+      - currency
+      - occurredAt
+      - createdAt
+    FinanceFunds:
+      type: object
+      additionalProperties: false
+      properties:
+        payment:
+          $ref: '#/components/schemas/PaymentRecord'
+        refunds:
+          type: array
+          items:
+            $ref: '#/components/schemas/RefundRecord'
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/CashEntryRecord'
+      required:
+      - payment
+      - refunds
+      - entries
+    FinanceReasonRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 255
+      required:
+      - reason
+    FinanceDispositionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        action:
+          type: string
+          enum:
+          - KEEP_OPEN
+          - CONFIRM_SUPERSEDED
+        replacementBatchId:
+          type: integer
+          format: int64
+          minimum: 1
+          nullable: true
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 255
+      required:
+      - action
+      - reason
+    FinanceBatchRecovery:
+      type: object
+      additionalProperties: false
+      properties:
+        batchId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        repairedCount:
+          type: integer
+          format: int64
+          minimum: 0
+        deferredCount:
+          type: integer
+          format: int64
+          minimum: 0
+        status:
+          type: string
+          enum:
+          - MATCHED
+          - DIFF
+          - INCOMPLETE
+      required:
+      - batchId
+      - repairedCount
+      - deferredCount
+      - status
+    FinanceItemDisposition:
+      type: object
+      additionalProperties: false
+      properties:
+        itemId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        status:
+          type: string
+          enum:
+          - OPEN
+          - PENDING_CONFIRMATION
+          - RESOLVED
+        evidenceId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+      required:
+      - itemId
+      - status
+    RefundRecoverySummary:
+      type: object
+      additionalProperties: false
+      properties:
+        refundNo:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - INIT
+          - PROCESSING
+          - UNKNOWN
+          - SUCCESS
+          - FAILED_FINAL
+          - FAILED_RETRYABLE
+        channelStatus:
+          type: string
+          enum:
+          - NOT_FOUND
+      required:
+      - refundNo
+      - status
+    RefundAdminResult:
+      oneOf:
+      - $ref: '#/components/schemas/RefundRecoverySummary'
+      - $ref: '#/components/schemas/FinanceFunds'
+    FinanceBatchDetailResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/FinanceBatchDetail'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    FinanceItemDetailResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/FinanceItemDetail'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    FinanceBatchRecoveryResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/FinanceBatchRecovery'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    FinanceItemDispositionResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/FinanceItemDisposition'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    RefundAdminResultResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/RefundAdminResult'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    MeterSessionRecord:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        sessionNo:
+          type: string
+          format: uuid
+        orderNo:
+          type: string
+          format: uuid
+        deviceId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        connectorId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        status:
+          type: string
+          maxLength: 24
+        startMeterWh:
+          type: integer
+          format: int64
+          minimum: 0
+          nullable: true
+        endMeterWh:
+          type: integer
+          format: int64
+          minimum: 0
+          nullable: true
+        finalSeq:
+          type: integer
+          format: int64
+          minimum: 0
+          nullable: true
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+        endedAt:
+          type: string
+          format: date-time
+          nullable: true
+        stopConfirmedAt:
+          type: string
+          format: date-time
+          nullable: true
+        stopConfirmedEventId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+          nullable: true
+      required:
+      - id
+      - sessionNo
+      - orderNo
+      - deviceId
+      - connectorId
+      - status
+      - startMeterWh
+      - endMeterWh
+      - finalSeq
+      - startedAt
+      - endedAt
+      - stopConfirmedAt
+      - stopConfirmedEventId
+    MeterSampleRecord:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        sessionNo:
+          type: string
+          format: uuid
+        deviceEventId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        seqNo:
+          type: integer
+          format: int64
+          minimum: 0
+        meterWh:
+          type: integer
+          format: int64
+          minimum: 0
+        sampledAt:
+          type: string
+          format: date-time
+        sampleKind:
+          type: string
+          maxLength: 24
+      required:
+      - id
+      - sessionNo
+      - deviceEventId
+      - seqNo
+      - meterWh
+      - sampledAt
+      - sampleKind
+    ReviewedMeterSample:
+      type: object
+      additionalProperties: false
+      properties:
+        seqNo:
+          type: integer
+          format: int64
+          minimum: 0
+        meterWh:
+          type: integer
+          format: int64
+          minimum: 0
+        sampledAt:
+          type: string
+          format: date-time
+        sampleKind:
+          type: string
+          enum:
+          - START
+          - NORMAL
+          - TARIFF_BOUNDARY
+          - DAY_BOUNDARY
+          - END
+        reviewSelected:
+          type: boolean
+          enum:
+          - true
+      required:
+      - seqNo
+      - meterWh
+      - sampledAt
+      - sampleKind
+      - reviewSelected
+    EffectiveMeterSample:
+      oneOf:
+      - $ref: '#/components/schemas/MeterSampleRecord'
+      - $ref: '#/components/schemas/ReviewedMeterSample'
+    RawMeterEvent:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        eventId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        eventType:
+          type: string
+          maxLength: 24
+        seqNo:
+          type: integer
+          format: int64
+          minimum: 0
+          nullable: true
+        payloadHash:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        payload:
+          type: string
+          description: 原始数据库JSON的编码文本；保留证据字节语义，不伪装为已解析对象
+        processStatus:
+          type: string
+          maxLength: 24
+        errorCode:
+          type: string
+          maxLength: 64
+          nullable: true
+        occurredAt:
+          type: string
+          format: date-time
+        receivedAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - eventId
+      - eventType
+      - seqNo
+      - payloadHash
+      - payload
+      - processStatus
+      - errorCode
+      - occurredAt
+      - receivedAt
+    FullMeterEvent:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        deviceId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        eventId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        sessionNo:
+          type: string
+          format: uuid
+          nullable: true
+        eventType:
+          type: string
+          maxLength: 24
+        seqNo:
+          type: integer
+          format: int64
+          minimum: 0
+          nullable: true
+        payloadHash:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        payload:
+          type: string
+          description: 原始数据库JSON的编码文本；保留证据字节语义，不伪装为已解析对象
+        processStatus:
+          type: string
+          maxLength: 24
+        errorCode:
+          type: string
+          maxLength: 64
+          nullable: true
+        occurredAt:
+          type: string
+          format: date-time
+        receivedAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - deviceId
+      - eventId
+      - sessionNo
+      - eventType
+      - seqNo
+      - payloadHash
+      - payload
+      - processStatus
+      - errorCode
+      - occurredAt
+      - receivedAt
+    MeterEventConflict:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        originalEventId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        payloadHash:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        payload:
+          type: string
+          description: 原始数据库JSON的编码文本；保留证据字节语义，不伪装为已解析对象
+        receivedAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - originalEventId
+      - payloadHash
+      - payload
+      - receivedAt
+    MeterReplayRecord:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        requestNo:
+          type: string
+          format: uuid
+        orderNo:
+          type: string
+          format: uuid
+        sessionNo:
+          type: string
+          format: uuid
+        fromSeq:
+          type: integer
+          format: int64
+          minimum: 0
+        toSeq:
+          type: integer
+          format: int64
+          minimum: 0
+        requestedBy:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,18})$
+          description: 64位编号字符串；0表示系统操作者或没有历史覆盖点
+        reason:
+          type: string
+          maxLength: 255
+        status:
+          type: string
+          maxLength: 16
+        receivedCount:
+          type: integer
+          format: int64
+          minimum: 0
+        responseHash:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+          nullable: true
+        resultCode:
+          type: string
+          maxLength: 64
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - requestNo
+      - orderNo
+      - sessionNo
+      - fromSeq
+      - toSeq
+      - requestedBy
+      - reason
+      - status
+      - receivedCount
+      - responseHash
+      - resultCode
+      - createdAt
+      - updatedAt
+    MeterProposalRecord:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        proposalNo:
+          type: string
+          format: uuid
+        orderNo:
+          type: string
+          format: uuid
+        sessionNo:
+          type: string
+          format: uuid
+        selectedEvidence:
+          type: string
+          description: 原始数据库JSON的编码文本；保留证据字节语义，不伪装为已解析对象
+        evidenceHash:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        proposedBy:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,18})$
+          description: 64位编号字符串；0表示系统操作者或没有历史覆盖点
+        reason:
+          type: string
+          maxLength: 255
+        createdAt:
+          type: string
+          format: date-time
+        decision:
+          type: string
+          enum:
+          - APPROVE
+          - REJECT
+          nullable: true
+        decidedBy:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+          nullable: true
+        decisionReason:
+          type: string
+          minLength: 5
+          maxLength: 255
+          nullable: true
+        decidedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - id
+      - proposalNo
+      - orderNo
+      - sessionNo
+      - selectedEvidence
+      - evidenceHash
+      - proposedBy
+      - reason
+      - createdAt
+      - decision
+      - decidedBy
+      - decisionReason
+      - decidedAt
+    MeterSelectionRecord:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        sessionNo:
+          type: string
+          format: uuid
+        seqNo:
+          type: integer
+          format: int64
+          minimum: 0
+        proposalNo:
+          type: string
+          format: uuid
+        selectedEventId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        selectedPayloadHash:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        coveredThroughEventId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        coveredThroughConflictId:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,18})$
+          description: 64位编号字符串；0表示系统操作者或没有历史覆盖点
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - sessionNo
+      - seqNo
+      - proposalNo
+      - selectedEventId
+      - selectedPayloadHash
+      - coveredThroughEventId
+      - coveredThroughConflictId
+      - createdAt
+    MissingMeterRange:
+      type: object
+      additionalProperties: false
+      properties:
+        fromSeq:
+          type: integer
+          format: int64
+          minimum: 0
+        toSeq:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - fromSeq
+      - toSeq
+    MeterReviewPolicy:
+      type: object
+      additionalProperties: false
+      properties:
+        manualAmountsAllowed:
+          type: boolean
+          enum:
+          - false
+        secondReviewerRequired:
+          type: boolean
+          enum:
+          - true
+        evidenceLimit:
+          type: integer
+          format: int64
+          minimum: 0
+          enum:
+          - 1000
+        maxReplayRange:
+          type: integer
+          format: int64
+          minimum: 0
+          enum:
+          - 10000
+        issuedBillCanBeChanged:
+          type: boolean
+          enum:
+          - false
+      required:
+      - manualAmountsAllowed
+      - secondReviewerRequired
+      - evidenceLimit
+      - maxReplayRange
+      - issuedBillCanBeChanged
+    MeterReview:
+      type: object
+      additionalProperties: false
+      properties:
+        orderNo:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - WAIT_PAY
+          - CANCELING
+          - START_PENDING
+          - CHARGING
+          - STOP_PENDING
+          - BILLING
+          - REVIEW
+          - EXCEPTION
+          - COMPLETED
+          - CANCELED
+        financialStatus:
+          type: string
+          enum:
+          - OPEN
+          - REFUNDING
+          - CLOSED
+          - DIFF
+          - SHORTFALL
+        exceptionCode:
+          type: string
+          nullable: true
+        session:
+          $ref: '#/components/schemas/MeterSessionRecord'
+        billImmutable:
+          type: boolean
+        effectiveSamples:
+          type: array
+          items:
+            $ref: '#/components/schemas/EffectiveMeterSample'
+        rawEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/RawMeterEvent'
+          maxItems: 1000
+        conflictingPayloads:
+          type: array
+          items:
+            $ref: '#/components/schemas/MeterEventConflict'
+          maxItems: 1000
+        unresolvedEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/FullMeterEvent'
+        missingRanges:
+          type: array
+          items:
+            $ref: '#/components/schemas/MissingMeterRange'
+        replayRequests:
+          type: array
+          items:
+            $ref: '#/components/schemas/MeterReplayRecord'
+          maxItems: 100
+        proposals:
+          type: array
+          items:
+            $ref: '#/components/schemas/MeterProposalRecord'
+          maxItems: 100
+        selections:
+          type: array
+          items:
+            $ref: '#/components/schemas/MeterSelectionRecord'
+        validation:
+          type: string
+        policy:
+          $ref: '#/components/schemas/MeterReviewPolicy'
+      required:
+      - orderNo
+      - status
+      - financialStatus
+      - exceptionCode
+      - session
+      - billImmutable
+      - effectiveSamples
+      - rawEvents
+      - conflictingPayloads
+      - unresolvedEvents
+      - missingRanges
+      - replayRequests
+      - proposals
+      - selections
+      - validation
+      - policy
+    MeterReplayRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          minLength: 5
+          maxLength: 255
+        fromSeq:
+          type: integer
+          format: int64
+          minimum: 0
+        toSeq:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - reason
+      - fromSeq
+      - toSeq
+    MeterReplayAccepted:
+      type: object
+      additionalProperties: false
+      properties:
+        requestNo:
+          type: string
+          format: uuid
+        orderNo:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - PENDING
+        fromSeq:
+          type: integer
+          format: int64
+          minimum: 0
+        toSeq:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+      - requestNo
+      - orderNo
+      - status
+      - fromSeq
+      - toSeq
+    MeterProposalRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          minLength: 5
+          maxLength: 255
+        selectedDeviceEventIds:
+          type: array
+          items:
+            oneOf:
+            - type: string
+              pattern: ^[1-9][0-9]{0,18}$
+              description: 64位数据库编号使用十进制字符串
+            - type: integer
+              format: int64
+              minimum: 1
+          minItems: 1
+          maxItems: 100
+          uniqueItems: true
+      required:
+      - reason
+      - selectedDeviceEventIds
+    SelectedMeterEvidence:
+      type: object
+      additionalProperties: false
+      properties:
+        seqNo:
+          type: integer
+          format: int64
+          minimum: 0
+        deviceEventId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        payloadHash:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        coveredThroughEventId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        coveredThroughConflictId:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,18})$
+          description: 64位编号字符串；0表示系统操作者或没有历史覆盖点
+      required:
+      - seqNo
+      - deviceEventId
+      - payloadHash
+      - coveredThroughEventId
+      - coveredThroughConflictId
+    MeterProposalAccepted:
+      type: object
+      additionalProperties: false
+      properties:
+        proposalNo:
+          type: string
+          format: uuid
+        orderNo:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - PROPOSED
+        evidenceHash:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        selectedEvidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/SelectedMeterEvidence'
+          minItems: 1
+          maxItems: 100
+      required:
+      - proposalNo
+      - orderNo
+      - status
+      - evidenceHash
+      - selectedEvidence
+    MeterDecisionRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          minLength: 5
+          maxLength: 255
+        decision:
+          type: string
+          enum:
+          - APPROVE
+          - REJECT
+      required:
+      - reason
+      - decision
+    MeterDecisionResult:
+      type: object
+      additionalProperties: false
+      properties:
+        proposalNo:
+          type: string
+          format: uuid
+        orderNo:
+          type: string
+          format: uuid
+        decision:
+          type: string
+          enum:
+          - APPROVE
+          - REJECT
+        evidenceHash:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        billCreated:
+          type: boolean
+      required:
+      - proposalNo
+      - orderNo
+      - decision
+      - evidenceHash
+      - billCreated
+    MeterReviewResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/MeterReview'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    MeterReplayAcceptedResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/MeterReplayAccepted'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    MeterProposalAcceptedResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/MeterProposalAccepted'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    MeterDecisionResultResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/MeterDecisionResult'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    OutboxTask:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        eventId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        eventName:
+          type: string
+          maxLength: 64
+        aggregateId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        status:
+          type: string
+          enum:
+          - READY
+          - PROCESSING
+          - PUBLISHED
+          - DONE
+          - DEAD
+        attemptCount:
+          type: integer
+          format: int64
+          minimum: 0
+        lastError:
+          type: string
+          maxLength: 255
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - eventId
+      - eventName
+      - aggregateId
+      - status
+      - attemptCount
+      - lastError
+      - createdAt
+    OutboxTaskPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OutboxTask'
+        nextCursor:
+          type: string
+          nullable: true
+      required:
+      - items
+      - nextCursor
+    OutboxTaskPageResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/OutboxTaskPage'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    AuditRecord:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        operatorId:
+          type: string
+          pattern: ^(0|[1-9][0-9]{0,18})$
+          description: 64位编号字符串；0表示系统操作者或没有历史覆盖点
+        action:
+          type: string
+          maxLength: 64
+        targetType:
+          type: string
+          maxLength: 40
+        targetNo:
+          type: string
+          maxLength: 80
+        reason:
+          type: string
+          maxLength: 255
+        requestId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - operatorId
+      - action
+      - targetType
+      - targetNo
+      - reason
+      - requestId
+      - createdAt
+    AuditPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditRecord'
+        nextCursor:
+          type: string
+          nullable: true
+      required:
+      - items
+      - nextCursor
+    StaffOrder:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        orderNo:
+          type: string
+          format: uuid
+        stationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        connectorId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: 64位数据库编号使用十进制字符串
+        status:
+          type: string
+          enum:
+          - WAIT_PAY
+          - CANCELING
+          - START_PENDING
+          - CHARGING
+          - STOP_PENDING
+          - BILLING
+          - REVIEW
+          - EXCEPTION
+          - COMPLETED
+          - CANCELED
+        financialStatus:
+          type: string
+          enum:
+          - OPEN
+          - REFUNDING
+          - CLOSED
+          - DIFF
+          - SHORTFALL
+        prepaidFen:
+          type: integer
+          format: int64
+          minimum: 0
+        exceptionCode:
+          type: string
+          maxLength: 64
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        sessionNo:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - id
+      - orderNo
+      - stationId
+      - connectorId
+      - status
+      - financialStatus
+      - prepaidFen
+      - exceptionCode
+      - createdAt
+      - sessionNo
+    StaffOrderPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/StaffOrder'
+        nextCursor:
+          type: string
+          nullable: true
+      required:
+      - items
+      - nextCursor
+    StaffOrderPageResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/StaffOrderPage'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    AuditPageResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/AuditPage'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    Health:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum:
+          - UP
+          - DOWN
+          - OUT_OF_SERVICE
+          - UNKNOWN
+        groups:
+          type: array
+          items:
+            type: string
+      required:
+      - status
 x-design-source: spec/04-openapi.yaml
 x-runtime-differences:
 - 取消与停止受理返回最新 Order，含资源、会话、费率版本及阶段时间。

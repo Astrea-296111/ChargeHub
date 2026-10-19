@@ -10,7 +10,7 @@ public class Idempotency {
     public Idempotency(Db db,PlatformTransactionManager manager){this.db=db;tx=new TransactionTemplate(manager);}
     public Map<String,Object> execute(long user,String scope,String key,Map<String,?> request,Supplier<Map<String,Object>> action){
         if(key==null||key.length()<8||key.length()>64||!key.matches("[A-Za-z0-9._:-]+"))throw new BusinessException(400,"VALIDATION_ERROR","Idempotency-Key 需为8至64位字符");
-        String hash=Json.hash(Json.write(new TreeMap<>(request)));
+        String hash=Json.hash(Json.write(canonical(request)));
         return tx.execute(status->{
             if(db.one("SELECT id FROM iam_user WHERE id=? FOR UPDATE",user)==null)throw new BusinessException(401,"AUTH_REQUIRED","账号不存在");
             Map<String,Object> prior=db.one("SELECT * FROM idempotency_record WHERE principal_id=? AND scope=? AND idem_key=?",user,scope,key);
@@ -23,5 +23,10 @@ public class Idempotency {
             db.update("UPDATE idempotency_record SET status='DONE',http_status=200,response_json=? WHERE principal_id=? AND scope=? AND idem_key=?",Json.write(result),user,scope,key);
             return result;
         });
+    }
+    private static Object canonical(Object value){
+        if(value instanceof Map<?,?> map){Map<String,Object> ordered=new TreeMap<>();map.forEach((k,v)->ordered.put(k.toString(),canonical(v)));return ordered;}
+        if(value instanceof Collection<?> list)return list.stream().map(Idempotency::canonical).toList();
+        return value;
     }
 }

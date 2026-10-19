@@ -1,5 +1,7 @@
 -- Read-only integrity gate. Run on a transactionally consistent snapshot with a read-only account.
+-- Requires the current V1-V7 schema (including finance/evidence extensions).
 -- Each SELECT must return zero rows. Rows include a stable check name and the affected business key.
+-- REVIEW/DIFF are business safety states, not integrity violations by themselves.
 SET time_zone = '+00:00';
 SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
 START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY;
@@ -75,12 +77,18 @@ WHERE c.active_order_no IS NOT NULL AND (o.id IS NULL OR o.connector_id<>c.id OR
 SELECT 'active_order_binding_missing' AS check_name,o.order_no AS entity_no FROM charge_order o
 JOIN iam_user u ON u.id=o.user_id JOIN connector c ON c.id=o.connector_id
 WHERE o.status NOT IN ('COMPLETED','CANCELED')
+  AND NOT EXISTS (SELECT 1 FROM charge_session ended WHERE ended.order_no=o.order_no AND ended.status='STOPPED' AND ended.ended_at IS NOT NULL AND ended.final_seq IS NOT NULL)
   AND (u.active_order_no IS NULL OR u.active_order_no<>o.order_no OR c.active_order_no IS NULL OR c.active_order_no<>o.order_no);
 
-SELECT 'multiple_active_user_orders' AS check_name,CAST(user_id AS CHAR) AS entity_no FROM charge_order
-WHERE status NOT IN ('COMPLETED','CANCELED') GROUP BY user_id HAVING COUNT(*)>1;
-SELECT 'multiple_active_connector_orders' AS check_name,CAST(connector_id AS CHAR) AS entity_no FROM charge_order
-WHERE status NOT IN ('COMPLETED','CANCELED') GROUP BY connector_id HAVING COUNT(*)>1;
+-- A physically ended REVIEW can await evidence while a later physical session uses the connector.
+SELECT 'multiple_active_user_orders' AS check_name,CAST(o.user_id AS CHAR) AS entity_no FROM charge_order o
+WHERE o.status NOT IN ('COMPLETED','CANCELED')
+  AND NOT EXISTS (SELECT 1 FROM charge_session ended WHERE ended.order_no=o.order_no AND ended.status='STOPPED' AND ended.ended_at IS NOT NULL AND ended.final_seq IS NOT NULL)
+GROUP BY o.user_id HAVING COUNT(*)>1;
+SELECT 'multiple_active_connector_orders' AS check_name,CAST(o.connector_id AS CHAR) AS entity_no FROM charge_order o
+WHERE o.status NOT IN ('COMPLETED','CANCELED')
+  AND NOT EXISTS (SELECT 1 FROM charge_session ended WHERE ended.order_no=o.order_no AND ended.status='STOPPED' AND ended.ended_at IS NOT NULL AND ended.final_seq IS NOT NULL)
+GROUP BY o.connector_id HAVING COUNT(*)>1;
 
 SELECT 'session_resource_ownership' AS check_name,s.session_no AS entity_no FROM charge_session s
 LEFT JOIN charge_order o ON o.order_no=s.order_no LEFT JOIN connector c ON c.id=s.connector_id
@@ -88,7 +96,7 @@ WHERE o.id IS NULL OR c.id IS NULL OR s.connector_id<>o.connector_id OR s.device
 
 SELECT 'live_session_released' AS check_name,s.session_no AS entity_no FROM charge_session s
 JOIN charge_order o ON o.order_no=s.order_no JOIN connector c ON c.id=s.connector_id
-WHERE s.status IN ('STARTING','RUNNING','CHARGING','STOP_PENDING','UNKNOWN')
+WHERE s.status IN ('START_PENDING','STARTING','RUNNING','CHARGING','STOP_PENDING','UNKNOWN')
   AND (o.status IN ('CANCELED','COMPLETED') OR c.active_order_no IS NULL OR c.active_order_no<>s.order_no OR c.status='IDLE');
 
 SELECT 'benefit_ownership' AS check_name,r.order_no AS entity_no FROM benefit_reservation r
@@ -124,5 +132,61 @@ SELECT 'orphan_refund' AS check_name,r.refund_no AS entity_no FROM refund_order 
 SELECT 'orphan_cash_capture' AS check_name,c.biz_no AS entity_no FROM cash_entry c LEFT JOIN payment_order p ON p.pay_no=c.biz_no WHERE c.biz_type='CAPTURE' AND (p.id IS NULL OR c.order_no<>p.order_no OR c.channel<>p.channel OR c.currency<>p.currency OR c.amount_fen<>p.amount_fen);
 SELECT 'orphan_cash_refund' AS check_name,c.biz_no AS entity_no FROM cash_entry c LEFT JOIN refund_order r ON r.refund_no=c.biz_no WHERE c.biz_type='REFUND' AND (r.id IS NULL OR c.order_no<>r.order_no OR c.amount_fen<>r.amount_fen);
 SELECT 'orphan_reconciliation_item' AS check_name,CAST(i.id AS CHAR) AS entity_no FROM reconcile_item i LEFT JOIN reconcile_batch b ON b.id=i.batch_id WHERE b.id IS NULL;
+
+-- Definitive and retryable failures both release their old reservation; a retry must first return to INIT.
+SELECT 'refund_supported_state' AS check_name,refund_no AS entity_no FROM refund_order
+WHERE status NOT IN ('INIT','PENDING','PROCESSING','UNKNOWN','SUCCESS','FAILED_FINAL','FAILED_RETRYABLE') OR retry_attempt<0;
+
+SELECT 'captured_payment_identity' AS check_name,pay_no AS entity_no FROM payment_order
+WHERE captured_fen>0 AND (captured_fen<>amount_fen OR status<>'SUCCESS' OR provider_trade_no IS NULL OR captured_at IS NULL);
+
+SELECT 'capture_fact_identity' AS check_name,c.biz_no AS entity_no FROM cash_entry c
+JOIN payment_order p ON p.pay_no=c.biz_no
+WHERE c.biz_type='CAPTURE' AND (p.provider_trade_no IS NULL OR c.provider_biz_no<>p.provider_trade_no OR p.captured_at IS NULL OR c.occurred_at<>p.captured_at);
+
+SELECT 'refund_success_fact' AS check_name,r.refund_no AS entity_no FROM refund_order r
+JOIN payment_order p ON p.pay_no=r.pay_no
+LEFT JOIN cash_entry c ON c.biz_type='REFUND' AND c.biz_no=r.refund_no
+WHERE r.status='SUCCESS' AND (c.id IS NULL OR r.provider_refund_no IS NULL OR c.provider_biz_no<>r.provider_refund_no
+  OR c.amount_fen<>r.amount_fen OR c.order_no<>r.order_no OR c.channel<>p.channel OR c.currency<>p.currency);
+
+SELECT 'refund_non_success_has_cash' AS check_name,r.refund_no AS entity_no FROM refund_order r
+JOIN cash_entry c ON c.biz_type='REFUND' AND c.biz_no=r.refund_no
+WHERE r.status<>'SUCCESS';
+
+SELECT 'closed_with_reserved_refund' AS check_name,o.order_no AS entity_no FROM charge_order o
+JOIN payment_order p ON p.order_no=o.order_no
+WHERE o.financial_status='CLOSED' AND p.refund_reserved_fen<>0;
+
+-- A confirmed physical end can be REVIEW: invalid meter values or rejected competing readings do not unstop a device.
+-- Legacy STOPPED rows need their original matching event; new rows also pin stop_confirmed_event_id.
+SELECT 'stopped_session_evidence' AS check_name,s.session_no AS entity_no FROM charge_session s
+WHERE s.status='STOPPED' AND (s.ended_at IS NULL OR s.final_seq IS NULL OR s.final_seq<1
+  OR NOT EXISTS (SELECT 1 FROM device_event e WHERE e.session_no=s.session_no AND e.device_id=s.device_id
+    AND e.event_type='STOPPED' AND e.seq_no=s.final_seq
+    AND JSON_UNQUOTE(JSON_EXTRACT(e.payload,'$.connectorId'))=CAST(s.connector_id AS CHAR)
+    AND (s.stop_confirmed_event_id IS NULL OR e.id=s.stop_confirmed_event_id)));
+
+-- Rejected/conflicting callbacks and meter-review evidence are preserved, never declared bookkeeping errors merely for existing.
+SELECT 'finance_operation_lease' AS check_name,CAST(id AS CHAR) AS entity_no FROM finance_operation
+WHERE attempt_count<0 OR lease_token<0
+  OR (status='PROCESSING' AND (lease_until IS NULL OR attempt_count<1 OR lease_token<1))
+  OR (status='DONE' AND (response_payload IS NULL OR lease_until IS NOT NULL))
+  OR status NOT IN ('NEW','PROCESSING','DONE','RETRYABLE');
+
+SELECT 'finance_evidence_ownership' AS check_name,CAST(e.id AS CHAR) AS entity_no FROM finance_evidence e
+LEFT JOIN finance_operation o ON o.id=e.operation_id
+LEFT JOIN reconcile_batch b ON b.id=e.batch_id
+LEFT JOIN reconcile_item i ON i.id=e.item_id
+WHERE o.id IS NULL OR e.operation_attempt<1 OR e.operation_attempt>o.attempt_count
+  OR (e.batch_id IS NOT NULL AND b.id IS NULL)
+  OR (e.item_id IS NOT NULL AND (i.id IS NULL OR e.batch_id IS NULL OR i.batch_id<>e.batch_id))
+  OR (e.verified=1 AND (e.response_payload IS NULL OR e.response_hash IS NULL));
+
+SELECT 'reconcile_recovery_ownership' AS check_name,CAST(t.batch_id AS CHAR) AS entity_no FROM reconcile_recovery_task t
+LEFT JOIN reconcile_batch b ON b.id=t.batch_id
+WHERE b.id IS NULL OR t.attempt_count<0 OR t.lease_token<0
+  OR (t.status='PROCESSING' AND (t.lease_until IS NULL OR t.lease_token<1))
+  OR t.status NOT IN ('READY','PROCESSING','DONE','DEAD');
 
 COMMIT;

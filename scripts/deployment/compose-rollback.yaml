@@ -1,0 +1,77 @@
+# Only rollback.py generates credentials/names and starts this zero-host-port stack.
+x-app-env: &app-env
+  CHARGEHUB_JDBC_URL: jdbc:mysql://mysql:3306/${ROLLBACK_DATABASE:?required}?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8
+  CHARGEHUB_DB_USER: rollback
+  CHARGEHUB_DB_PASSWORD: ${ROLLBACK_DB_PASSWORD:?required}
+  CHARGEHUB_DEMO_PASSWORD: ${ROLLBACK_PASSWORD:?required}
+  CHARGEHUB_PAYMENT_KEY: ${ROLLBACK_PAYMENT_KEY:?required}
+  CHARGEHUB_DEVICE_KEY: ${ROLLBACK_DEVICE_KEY:?required}
+  CHARGEHUB_CONTROL_KEY: ${ROLLBACK_CONTROL_KEY:?required}
+  CHARGEHUB_FIXED_TIME: 2026-10-18T07:00:00Z
+  CHARGEHUB_PAYMENT_URL: http://gateway:18081
+  CHARGEHUB_DEVICE_URL: http://device:18082
+  CHARGEHUB_CALLBACK_URL: http://api:8080
+  CHARGEHUB_BIND_ADDRESS: 0.0.0.0
+  MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"
+  SPRING_PROFILES_ACTIVE: dev,api,worker
+services:
+  mysql:
+    image: mysql:8.4.7@sha256:0426ec38c7a10aa45ba383887df7878f74ee70e2fd589c7b69207f3577901903
+    environment:
+      MYSQL_ROOT_PASSWORD: ${ROLLBACK_MYSQL_ROOT_PASSWORD:?required}
+      MYSQL_DATABASE: ${ROLLBACK_DATABASE:?required}
+      MYSQL_USER: rollback
+      MYSQL_PASSWORD: ${ROLLBACK_DB_PASSWORD:?required}
+    command: ["--default-time-zone=+00:00"]
+    volumes: [mysql-data:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_PASSWORD mysql -u rollback -h 127.0.0.1 -e 'SELECT 1' $$MYSQL_DATABASE >/dev/null 2>&1"]
+      interval: 3s
+      timeout: 3s
+      retries: 60
+  gateway:
+    image: ${ROLLBACK_SIMULATOR_IMAGE:?required}
+    pull_policy: never
+    environment: &sim-env
+      SIMULATOR_HOST: 0.0.0.0
+      CHARGEHUB_PAYMENT_KEY: ${ROLLBACK_PAYMENT_KEY:?required}
+      CHARGEHUB_DEVICE_KEY: ${ROLLBACK_DEVICE_KEY:?required}
+      CHARGEHUB_CONTROL_KEY: ${ROLLBACK_CONTROL_KEY:?required}
+      CHARGEHUB_FIXED_TIME: 2026-10-18T07:00:00Z
+      CHARGEHUB_CALLBACK_URL: http://api:8080
+      PAYMENT_DB: /data/payment.sqlite3
+      DEVICE_DB: /data/device.sqlite3
+    volumes: [gateway-data:/data]
+  device:
+    image: ${ROLLBACK_SIMULATOR_IMAGE:?required}
+    pull_policy: never
+    command: ["python", "device.py"]
+    environment: *sim-env
+    volumes: [device-data:/data]
+  api:
+    image: ${ROLLBACK_IMAGE_ID:?required}
+    pull_policy: never
+    environment: *app-env
+    depends_on:
+      mysql: {condition: service_healthy}
+    read_only: true
+    tmpfs: [/tmp:size=128m,noexec,nosuid]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+  client:
+    image: python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+    profiles: [tools]
+    environment:
+      CHARGEHUB_ROLLBACK_ISOLATED: "yes"
+      CHARGEHUB_DEMO_PASSWORD: ${ROLLBACK_PASSWORD:?required}
+      CHARGEHUB_CONTROL_KEY: ${ROLLBACK_CONTROL_KEY:?required}
+    volumes:
+      - ./scripts:/suite:ro
+      - ./.local/rollback/${ROLLBACK_RUN_ID:?required}:/reports
+volumes:
+  mysql-data:
+    name: ${ROLLBACK_MYSQL_VOLUME:?required}
+  gateway-data:
+    name: ${ROLLBACK_GATEWAY_VOLUME:?required}
+  device-data:
+    name: ${ROLLBACK_DEVICE_VOLUME:?required}

@@ -1,0 +1,1440 @@
+openapi: 3.0.3
+info:
+  title: ChargeHub catalogue and benefit additions
+  version: 1.1.0
+  description: Independent additive fragment for merger into docs/openapi.yaml. Integer money in fen, integer energy
+    in Wh, database IDs serialized as strings, timestamps UTC. Existing create/publish tariff and template endpoints
+    stay in the root API.
+security:
+- BearerAuth: []
+paths:
+  /v1/stations/{id}:
+    get:
+      operationId: catalogStationDisplay
+      summary: Read one enabled station
+      tags:
+      - CatalogDisplay
+      description: Authenticated catalogue display. Short TTL cache; ordering eligibility always reads MySQL.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogStationDisplayResponse'
+        default:
+          description: Structured validation, authorization or business-state rejection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogError'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+  /v1/connectors/{id}/tariff:
+    get:
+      operationId: catalogConnectorTariffDisplay
+      summary: Read currently published display tariff
+      tags:
+      - CatalogDisplay
+      description: Authenticated catalogue display. Short TTL cache; ordering eligibility always reads MySQL.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogTariffDisplayResponse'
+        default:
+          description: Structured validation, authorization or business-state rejection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogError'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+  /v1/admin/stations:
+    get:
+      operationId: catalogListStations
+      summary: List enabled and disabled stations
+      tags:
+      - CatalogOperations
+      description: OPS or ADMIN. Writes require an audit reason and Idempotency-Key.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogStationPageResponse'
+        default:
+          description: Structured validation, authorization or business-state rejection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogError'
+      parameters:
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Limit'
+    post:
+      operationId: catalogCreateStation
+      summary: Create station
+      tags:
+      - CatalogOperations
+      description: OPS or ADMIN. Writes require an audit reason and Idempotency-Key.
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogStationRecordResponse'
+        default:
+          description: Structured validation, authorization or business-state rejection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogStationInput'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /v1/admin/stations/{id}:
+    put:
+      operationId: catalogUpdateStation
+      summary: Update station metadata
+      tags:
+      - CatalogOperations
+      description: OPS or ADMIN. Business timezone is immutable. An audit reason and Idempotency-Key are required.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogStationRecordResponse'
+        default:
+          description: Structured validation, authorization or business-state rejection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogStationInput'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /v1/admin/stations/{id}/status:
+    post:
+      operationId: catalogStationStatus
+      summary: Enable or disable station
+      tags:
+      - CatalogOperations
+      description: OPS or ADMIN. Disabling a station with active bound orders or charging connectors returns 409.
+        No binding is released.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogStationRecordResponse'
+        default:
+          description: Structured validation, authorization or business-state rejection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogStatusInput'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /v1/admin/stations/{id}/connectors:
+    get:
+      operationId: catalogListConnectors
+      summary: List station connectors including operational flags
+      tags:
+      - CatalogOperations
+      description: OPS or ADMIN. Writes require an audit reason and Idempotency-Key.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogConnectorPageResponse'
+        default:
+          description: Structured validation, authorization or business-state rejection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogError'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+  /v1/admin/connectors:
+    post:
+      operationId: catalogCreateConnector
+      summary: Create station connector
+      tags:
+      - CatalogOperations
+      description: OPS or ADMIN. Writes require an audit reason and Idempotency-Key.
+      responses:
+        '201':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogConnectorRecordResponse'
+        default:
+          description: Structured validation, authorization or business-state rejection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogConnectorInput'
+      parameters:
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /v1/admin/connectors/{id}:
+    put:
+      operationId: catalogUpdateConnector
+      summary: Update or move an idle connector
+      tags:
+      - CatalogOperations
+      description: OPS or ADMIN. Active bindings or CHARGING state prohibit identity/station changes. Historical
+        sessions are immutable.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogConnectorRecordResponse'
+        default:
+          description: Structured validation, authorization or business-state rejection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogConnectorInput'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /v1/admin/connectors/{id}/status:
+    post:
+      operationId: catalogConnectorStatus
+      summary: Enable or disable idle connector
+      tags:
+      - CatalogOperations
+      description: OPS or ADMIN. Operational disable is independent from device IDLE events. Active bindings are
+        never released.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogConnectorRecordResponse'
+        default:
+          description: Structured validation, authorization or business-state rejection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogStatusInput'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /v1/admin/tariffs/{id}:
+    get:
+      operationId: catalogTariffVersion
+      summary: Read immutable published tariff or draft
+      tags:
+      - CatalogOperations
+      description: OPS or ADMIN. Writes require an audit reason and Idempotency-Key.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogTariffVersionResponse'
+        default:
+          description: Structured validation, authorization or business-state rejection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogError'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+    put:
+      operationId: catalogUpdateDraftTariff
+      summary: Replace slots in DRAFT tariff only
+      tags:
+      - CatalogOperations
+      description: OPS or ADMIN. PUBLISHED tariffs return 409. Draft intervals cannot overlap; publication also
+        requires exact [0,1440) coverage. Station and version identity stay fixed.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogTariffDraftRecordResponse'
+        default:
+          description: Structured validation, authorization or business-state rejection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogTariffInput'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /v1/admin/coupon-templates:
+    get:
+      operationId: catalogListTemplateDrafts
+      summary: List all coupon templates
+      tags:
+      - CatalogOperations
+      description: OPS or ADMIN. Writes require an audit reason and Idempotency-Key.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogTemplatePageResponse'
+        default:
+          description: Structured validation, authorization or business-state rejection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogError'
+      parameters:
+      - $ref: '#/components/parameters/Cursor'
+      - $ref: '#/components/parameters/Limit'
+  /v1/admin/coupon-templates/{id}:
+    get:
+      operationId: catalogTemplate
+      summary: Read one coupon template
+      tags:
+      - CatalogOperations
+      description: OPS or ADMIN. Writes require an audit reason and Idempotency-Key.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogTemplateRecordResponse'
+        default:
+          description: Structured validation, authorization or business-state rejection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogError'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+    put:
+      operationId: catalogUpdateTemplateDraft
+      summary: Edit a DRAFT template with zero issued coupons
+      tags:
+      - CatalogOperations
+      description: OPS or ADMIN. PUBLISHED templates or nonzero issued stock return 409. Only ALL_STATIONS scope
+        is supported; no cancellation or expiry replenishes issued_count.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogTemplateRecordResponse'
+        default:
+          description: Structured validation, authorization or business-state rejection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogTemplateInput'
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /v1/admin/memberships/{userId}:
+    get:
+      operationId: catalogMembership
+      summary: Read user membership
+      tags:
+      - CatalogOperations
+      description: OPS or ADMIN. Writes require an audit reason and Idempotency-Key.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogMembershipRecordResponse'
+        default:
+          description: Structured validation, authorization or business-state rejection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogError'
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+    put:
+      operationId: catalogGrantMembership
+      summary: Grant or renew a demonstration membership
+      tags:
+      - CatalogOperations
+      description: OPS or ADMIN. Same-month reserved/used counters and frozen order rules are not reset or overwritten.
+        This is authorized dev/v1 entitlement administration, not a paid subscription API.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogMembershipRecordResponse'
+        default:
+          description: Structured validation, authorization or business-state rejection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogMembershipInput'
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      - $ref: '#/components/parameters/IdempotencyKey'
+  /v1/admin/memberships/{userId}/status:
+    post:
+      operationId: catalogMembershipStatus
+      summary: Enable or revoke future membership eligibility
+      tags:
+      - CatalogOperations
+      description: OPS or ADMIN. Existing reservations retain their frozen month and discount rule; revocation affects
+        future eligibility only.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogMembershipRecordResponse'
+        default:
+          description: Structured validation, authorization or business-state rejection
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogStatusInput'
+      parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+          minimum: 1
+      - $ref: '#/components/parameters/IdempotencyKey'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque-token
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 8
+        maxLength: 64
+        pattern: ^[A-Za-z0-9._:-]+$
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+      description: Last returned ID; ascending monotonic keyset cursor, no OFFSET.
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+  schemas:
+    CatalogStatusInput:
+      type: object
+      additionalProperties: false
+      properties:
+        enabled:
+          type: boolean
+        reason:
+          type: string
+          minLength: 5
+          maxLength: 255
+      required:
+      - enabled
+      - reason
+    CatalogStationInput:
+      type: object
+      additionalProperties: false
+      properties:
+        stationCode:
+          type: string
+          pattern: ^[A-Za-z0-9._:-]{1,40}$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        address:
+          type: string
+          minLength: 1
+          maxLength: 255
+        timezone:
+          type: string
+          enum:
+          - Asia/Shanghai
+        reason:
+          type: string
+          minLength: 5
+          maxLength: 255
+      required:
+      - stationCode
+      - name
+      - address
+      - timezone
+      - reason
+    CatalogConnectorInput:
+      type: object
+      additionalProperties: false
+      properties:
+        stationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        deviceId:
+          type: string
+          pattern: ^[A-Za-z0-9._:-]{1,64}$
+        connectorCode:
+          type: string
+          pattern: ^[A-Za-z0-9._:-]{1,40}$
+        reason:
+          type: string
+          minLength: 5
+          maxLength: 255
+      required:
+      - stationId
+      - deviceId
+      - connectorCode
+      - reason
+    CatalogTariffSlot:
+      type: object
+      additionalProperties: false
+      properties:
+        startMinute:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1439
+        endMinute:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 1440
+        energyRateFenPerKwh:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000
+        serviceRateFenPerKwh:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000
+      required:
+      - startMinute
+      - endMinute
+      - energyRateFenPerKwh
+      - serviceRateFenPerKwh
+    CatalogTariffInput:
+      type: object
+      additionalProperties: false
+      properties:
+        slots:
+          type: array
+          minItems: 1
+          maxItems: 48
+          items:
+            $ref: '#/components/schemas/CatalogTariffSlot'
+        reason:
+          type: string
+          minLength: 5
+          maxLength: 255
+      required:
+      - slots
+      - reason
+    CatalogTemplateInput:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        claimFrom:
+          type: string
+          format: date-time
+        claimUntil:
+          type: string
+          format: date-time
+        useValidFrom:
+          type: string
+          format: date-time
+        useValidUntil:
+          type: string
+          format: date-time
+        thresholdFen:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 10000
+        discountFen:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 10000
+        totalCount:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1000000
+        scope:
+          type: string
+          enum:
+          - ALL_STATIONS
+        reason:
+          type: string
+          minLength: 5
+          maxLength: 255
+      required:
+      - name
+      - claimFrom
+      - claimUntil
+      - useValidFrom
+      - useValidUntil
+      - thresholdFen
+      - discountFen
+      - totalCount
+      - scope
+      - reason
+    CatalogMembershipInput:
+      type: object
+      additionalProperties: false
+      properties:
+        planCode:
+          type: string
+          enum:
+          - DEMO_MONTHLY
+        validFrom:
+          type: string
+          format: date-time
+        validUntil:
+          type: string
+          format: date-time
+        reason:
+          type: string
+          minLength: 5
+          maxLength: 255
+      required:
+      - planCode
+      - validFrom
+      - validUntil
+      - reason
+    CatalogStationRecord:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        stationCode:
+          type: string
+          maxLength: 40
+        name:
+          type: string
+          maxLength: 120
+        address:
+          type: string
+          maxLength: 255
+        timezone:
+          type: string
+          maxLength: 40
+        activeTariffId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+        status:
+          type: string
+          enum:
+          - ENABLED
+          - DISABLED
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - stationCode
+      - name
+      - address
+      - timezone
+      - activeTariffId
+      - status
+      - createdAt
+    CatalogConnectorRecord:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        stationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        deviceId:
+          type: string
+          maxLength: 64
+        connectorCode:
+          type: string
+          maxLength: 40
+        status:
+          type: string
+        activeOrderNo:
+          type: string
+          format: uuid
+          nullable: true
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+        lastSeenAt:
+          type: string
+          format: date-time
+          nullable: true
+        operationalEnabled:
+          type: integer
+          format: int64
+          minimum: 0
+          maximum: 1
+        reportedDeviceStatus:
+          type: string
+          nullable: true
+        reportedStatusAt:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - id
+      - stationId
+      - deviceId
+      - connectorCode
+      - status
+      - activeOrderNo
+      - version
+      - lastSeenAt
+      - operationalEnabled
+      - reportedDeviceStatus
+      - reportedStatusAt
+    CatalogTemplateRecord:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        name:
+          type: string
+          maxLength: 120
+        status:
+          type: string
+          enum:
+          - DRAFT
+          - PUBLISHED
+        claimFrom:
+          type: string
+          format: date-time
+        claimUntil:
+          type: string
+          format: date-time
+        useValidFrom:
+          type: string
+          format: date-time
+        useValidUntil:
+          type: string
+          format: date-time
+        thresholdFen:
+          type: integer
+          format: int64
+          minimum: 0
+        discountFen:
+          type: integer
+          format: int64
+          minimum: 1
+        totalCount:
+          type: integer
+          format: int64
+          minimum: 0
+        issuedCount:
+          type: integer
+          format: int64
+          minimum: 0
+        scopeSnapshot:
+          type: string
+          description: MySQL JSON frozen rule serialized as JSON text
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - name
+      - status
+      - claimFrom
+      - claimUntil
+      - useValidFrom
+      - useValidUntil
+      - thresholdFen
+      - discountFen
+      - totalCount
+      - issuedCount
+      - scopeSnapshot
+      - createdAt
+    CatalogMembershipRecord:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        userId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        planCode:
+          type: string
+          maxLength: 40
+        validFrom:
+          type: string
+          format: date-time
+        validUntil:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum:
+          - ACTIVE
+          - INACTIVE
+        createdAt:
+          type: string
+          format: date-time
+      required:
+      - id
+      - userId
+      - planCode
+      - validFrom
+      - validUntil
+      - status
+      - createdAt
+    CatalogTariffVersion:
+      type: object
+      additionalProperties: false
+      properties:
+        tariffId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        stationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        versionNo:
+          type: integer
+          format: int64
+          minimum: 1
+        status:
+          type: string
+          enum:
+          - DRAFT
+          - PUBLISHED
+        ruleHash:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        slots:
+          type: array
+          minItems: 1
+          maxItems: 48
+          items:
+            $ref: '#/components/schemas/CatalogTariffSlot'
+      required:
+      - tariffId
+      - stationId
+      - versionNo
+      - status
+      - ruleHash
+      - slots
+    CatalogTariffDraftRecord:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        stationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        versionNo:
+          type: integer
+          format: int64
+          minimum: 1
+        status:
+          type: string
+          enum:
+          - DRAFT
+        ruleHash:
+          type: string
+          maxLength: 64
+        publishedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        slots:
+          type: array
+          minItems: 1
+          maxItems: 48
+          items:
+            $ref: '#/components/schemas/CatalogTariffSlot'
+      required:
+      - id
+      - stationId
+      - versionNo
+      - status
+      - ruleHash
+      - publishedAt
+      - createdAt
+      - slots
+    CatalogTariffDisplay:
+      type: object
+      additionalProperties: false
+      properties:
+        tariffId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        stationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        tariffVersion:
+          type: integer
+          format: int64
+          minimum: 1
+        timezone:
+          type: string
+          maxLength: 40
+        ruleHash:
+          type: string
+          maxLength: 64
+        slots:
+          type: array
+          minItems: 1
+          maxItems: 48
+          items:
+            $ref: '#/components/schemas/CatalogTariffSlot'
+      required:
+      - tariffId
+      - stationId
+      - tariffVersion
+      - timezone
+      - ruleHash
+      - slots
+    CatalogConnectorDisplay:
+      type: object
+      additionalProperties: false
+      properties:
+        connectorId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        deviceId:
+          type: string
+          maxLength: 64
+        connectorCode:
+          type: string
+          maxLength: 40
+        status:
+          type: string
+        available:
+          type: boolean
+      required:
+      - connectorId
+      - deviceId
+      - connectorCode
+      - status
+      - available
+    CatalogStationDisplay:
+      type: object
+      additionalProperties: false
+      properties:
+        stationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+        name:
+          type: string
+          maxLength: 120
+        address:
+          type: string
+          maxLength: 255
+        timezone:
+          type: string
+          maxLength: 40
+        tariffVersion:
+          type: integer
+          format: int64
+          minimum: 0
+        connectors:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogConnectorDisplay'
+      required:
+      - stationId
+      - name
+      - address
+      - timezone
+      - tariffVersion
+      - connectors
+    CatalogError:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        data:
+          nullable: true
+          type: object
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - requestId
+    CatalogStationPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogStationRecord'
+        nextCursor:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+      required:
+      - items
+      - nextCursor
+    CatalogTemplatePage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogTemplateRecord'
+        nextCursor:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
+      required:
+      - items
+      - nextCursor
+    CatalogConnectorPage:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogConnectorRecord'
+      required:
+      - items
+    CatalogStationRecordResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/CatalogStationRecord'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    CatalogConnectorRecordResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/CatalogConnectorRecord'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    CatalogTemplateRecordResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/CatalogTemplateRecord'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    CatalogMembershipRecordResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/CatalogMembershipRecord'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    CatalogTariffVersionResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/CatalogTariffVersion'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    CatalogTariffDraftRecordResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/CatalogTariffDraftRecord'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    CatalogTariffDisplayResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/CatalogTariffDisplay'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    CatalogConnectorDisplayResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/CatalogConnectorDisplay'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    CatalogStationDisplayResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/CatalogStationDisplay'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    CatalogStationPageResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/CatalogStationPage'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    CatalogTemplatePageResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/CatalogTemplatePage'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId
+    CatalogConnectorPageResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          enum:
+          - OK
+        message:
+          type: string
+        data:
+          $ref: '#/components/schemas/CatalogConnectorPage'
+        requestId:
+          type: string
+          format: uuid
+      required:
+      - code
+      - message
+      - data
+      - requestId

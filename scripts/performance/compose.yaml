@@ -1,0 +1,127 @@
+# Standalone isolated stack. Always use run.py, which generates private credentials,
+# a unique project/database, immutable local image ID, and evidence directory.
+x-app: &app
+  image: ${CHARGEHUB_CANDIDATE_IMAGE:?immutable candidate image required}
+  pull_policy: never
+  environment: &app-env
+    CHARGEHUB_JDBC_URL: jdbc:mysql://mysql:3306/${PERF_DATABASE:?isolated database required}?connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true&characterEncoding=UTF-8
+    CHARGEHUB_DB_USER: perf
+    CHARGEHUB_DB_PASSWORD: ${PERF_DB_PASSWORD:?required}
+    CHARGEHUB_DEMO_PASSWORD: ${PERF_PASSWORD:?required}
+    CHARGEHUB_PAYMENT_KEY: ${PERF_PAYMENT_KEY:?required}
+    CHARGEHUB_DEVICE_KEY: ${PERF_DEVICE_KEY:?required}
+    CHARGEHUB_CONTROL_KEY: ${PERF_CONTROL_KEY:?required}
+    CHARGEHUB_FIXED_TIME: 2026-10-18T07:00:00Z
+    CHARGEHUB_PAYMENT_URL: http://gateway:18081
+    CHARGEHUB_DEVICE_URL: http://device:18082
+    CHARGEHUB_CALLBACK_URL: http://api:8080
+    CHARGEHUB_BIND_ADDRESS: 0.0.0.0
+    CHARGEHUB_AUTH_LOGIN_ADDRESS_LIMIT: "1000"
+    CHARGEHUB_AUTH_LOGIN_ACCOUNT_LIMIT: "10"
+    CHARGEHUB_REDIS_ENABLED: "true"
+    CHARGEHUB_REDIS_HOST: redis
+    CHARGEHUB_REDIS_PORT: "6379"
+    MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"
+    MANAGEMENT_METRICS_DISTRIBUTION_PERCENTILESHISTOGRAM_HTTP_SERVER_REQUESTS: "true"
+    MANAGEMENT_METRICS_DISTRIBUTION_PERCENTILESHISTOGRAM_HIKARICP_CONNECTIONS_ACQUIRE: "true"
+    SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "12"
+  depends_on:
+    mysql: {condition: service_healthy}
+    gateway: {condition: service_healthy}
+    device: {condition: service_healthy}
+  read_only: true
+  tmpfs: [/tmp:size=128m,noexec,nosuid]
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+services:
+  mysql:
+    image: mysql:8.4.7@sha256:0426ec38c7a10aa45ba383887df7878f74ee70e2fd589c7b69207f3577901903
+    environment:
+      MYSQL_ROOT_PASSWORD: ${PERF_MYSQL_ROOT_PASSWORD:?required}
+      MYSQL_DATABASE: ${PERF_DATABASE:?required}
+      MYSQL_USER: perf
+      MYSQL_PASSWORD: ${PERF_DB_PASSWORD:?required}
+    command: ["--default-time-zone=+00:00", "--innodb-buffer-pool-size=1G", "--max-connections=100", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_0900_ai_ci"]
+    volumes: [mysql-data:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_PASSWORD mysql -u perf -h 127.0.0.1 -e 'SELECT 1' $$MYSQL_DATABASE >/dev/null 2>&1"]
+      interval: 3s
+      timeout: 3s
+      retries: 60
+    cpus: 1.0
+    mem_limit: 2g
+  redis:
+    image: redis:7.4-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+    command: ["redis-server", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
+    cpus: 0.1
+    mem_limit: 256m
+  gateway:
+    image: ${CHARGEHUB_SIMULATOR_IMAGE:?fixed simulator image required}
+    pull_policy: never
+    environment: &sim-env
+      SIMULATOR_HOST: 0.0.0.0
+      CHARGEHUB_PAYMENT_KEY: ${PERF_PAYMENT_KEY:?required}
+      CHARGEHUB_DEVICE_KEY: ${PERF_DEVICE_KEY:?required}
+      CHARGEHUB_CONTROL_KEY: ${PERF_CONTROL_KEY:?required}
+      CHARGEHUB_FIXED_TIME: 2026-10-18T07:00:00Z
+      CHARGEHUB_CALLBACK_URL: http://api:8080
+      PAYMENT_DB: /data/payment.sqlite3
+      DEVICE_DB: /data/device.sqlite3
+    volumes: [gateway-data:/data]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:18081/health',timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    cpus: 0.2
+    mem_limit: 512m
+  device:
+    image: ${CHARGEHUB_SIMULATOR_IMAGE:?required}
+    pull_policy: never
+    command: ["python", "device.py"]
+    environment: *sim-env
+    volumes: [device-data:/data]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:18082/health',timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    cpus: 0.2
+    mem_limit: 512m
+  api:
+    <<: *app
+    environment:
+      <<: *app-env
+      SPRING_PROFILES_ACTIVE: dev,api,perf
+    cpus: 1.0
+    mem_limit: 2g
+  worker:
+    <<: *app
+    environment:
+      <<: *app-env
+      SPRING_PROFILES_ACTIVE: dev,worker,perf
+    cpus: 0.4
+    mem_limit: 1g
+  loadgen:
+    image: python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
+    profiles: [tools]
+    working_dir: /suite
+    environment:
+      CHARGEHUB_PERF_ISOLATED: "yes"
+      PERF_DATABASE: ${PERF_DATABASE:?required}
+      PERF_PASSWORD: ${PERF_PASSWORD:?required}
+      PERF_CONTROL_KEY: ${PERF_CONTROL_KEY:?required}
+      PERF_RUN_ID: ${PERF_RUN_ID:?required}
+    volumes:
+      - ./scripts/performance:/suite:ro
+      - ./.local/performance/${PERF_RUN_ID:?required}/:/reports
+    read_only: true
+    tmpfs: [/tmp:size=32m,noexec,nosuid]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    cpus: 0.75
+    mem_limit: 512m
+volumes:
+  mysql-data:
+  gateway-data:
+  device-data:

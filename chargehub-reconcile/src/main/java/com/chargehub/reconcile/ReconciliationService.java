@@ -68,7 +68,13 @@ public class ReconciliationService {
             differences++;
         }
         String status = incomplete ? "INCOMPLETE" : differences == 0 ? "MATCHED" : "DIFF";
-        db.update("UPDATE reconcile_batch SET status=?,diff_count=? WHERE id=?", status, differences, batchId);
+        db.update("UPDATE reconcile_batch SET status=?,diff_count=?,source_content=? WHERE id=?", status, differences, csv, batchId);
+        if(differences>0)db.update("INSERT INTO reconcile_recovery_task(batch_id,operator_id,reason) VALUES(?,?,?) ON DUPLICATE KEY UPDATE batch_id=batch_id",batchId,operatorId,reason.trim());
+        for(var row:export.rows()) {
+            var snapshot=new LinkedHashMap<String,Object>();snapshot.put("payNo",row.payNo());snapshot.put("refundNo",row.refundNo());snapshot.put("providerBizNo",row.providerBizNo());
+            snapshot.put("amountFen",row.amountFen());snapshot.put("currency",row.currency());snapshot.put("occurredAt",row.occurredAt().toString());snapshot.put("status","SUCCESS");
+            db.update("UPDATE reconcile_item SET channel_snapshot=? WHERE batch_id=? AND provider_biz_no=?",Json.write(snapshot),batchId,row.providerBizNo());
+        }
         audit(operatorId, "IMPORT_RECONCILIATION", batchId, reason, Map.of(),
                 Map.of("status", status, "fileHash", hash, "totalCount", export.rows().size(), "diffCount", differences));
         return response(db.one("SELECT * FROM reconcile_batch WHERE id=?", batchId));
@@ -132,8 +138,8 @@ public class ReconciliationService {
 
     private Map<String, Object> expected(String billType, String bizNo) {
         return "PAYMENT".equals(billType)
-                ? db.one("SELECT order_no,pay_no,amount_fen,currency,channel FROM payment_order WHERE pay_no=?", bizNo)
-                : db.one("SELECT r.order_no,r.pay_no,r.amount_fen,p.currency,p.channel FROM refund_order r JOIN payment_order p ON p.pay_no=r.pay_no WHERE r.refund_no=?", bizNo);
+                ? db.one("SELECT order_no,pay_no,amount_fen,currency,channel,provider_trade_no AS expected_provider FROM payment_order WHERE pay_no=?", bizNo)
+                : db.one("SELECT r.order_no,r.pay_no,r.amount_fen,p.currency,p.channel,r.provider_refund_no AS expected_provider FROM refund_order r JOIN payment_order p ON p.pay_no=r.pay_no WHERE r.refund_no=?", bizNo);
     }
 
     static String compare(ChannelCsv.Export export, ChannelCsv.Row row, Map<String, Object> fact, Map<String, Object> expected) {
@@ -141,6 +147,7 @@ public class ReconciliationService {
                 || !Objects.equals(export.channel(), Db.str(expected, "channel"))) return "BUSINESS_MISMATCH";
         if (!Objects.equals(row.currency(), Db.str(expected, "currency"))) return "CURRENCY_MISMATCH";
         if (row.amountFen() != Db.num(expected, "amount_fen")) return "AMOUNT_MISMATCH";
+        if(Db.str(expected,"expected_provider")!=null&&!row.providerBizNo().equals(Db.str(expected,"expected_provider")))return "PROVIDER_MISMATCH";
         if (fact == null) return "CHANNEL_ONLY";
         if (!Objects.equals(row.bizNo(), Db.str(fact, "biz_no"))) return "BUSINESS_MISMATCH";
         if (!Objects.equals(row.providerBizNo(), Db.str(fact, "provider_biz_no"))) return "PROVIDER_MISMATCH";
@@ -148,6 +155,7 @@ public class ReconciliationService {
         if (row.amountFen() != Db.num(fact, "amount_fen")) return "AMOUNT_MISMATCH";
         Instant occurred = Db.instant(fact, "occurred_at");
         if (occurred == null || !occurred.atZone(export.timezone()).toLocalDate().equals(export.businessDate())) return "OCCURRED_DATE_MISMATCH";
+        if(!occurred.truncatedTo(java.time.temporal.ChronoUnit.MILLIS).equals(row.occurredAt().truncatedTo(java.time.temporal.ChronoUnit.MILLIS)))return "OCCURRED_TIME_MISMATCH";
         return null;
     }
 

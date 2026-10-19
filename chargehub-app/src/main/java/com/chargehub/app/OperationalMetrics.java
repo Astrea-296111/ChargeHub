@@ -4,8 +4,10 @@ import com.chargehub.infrastructure.*;import io.micrometer.core.instrument.*;imp
 public class OperationalMetrics implements MeterBinder {
  private final Db db;public OperationalMetrics(Db db){this.db=db;}
  public void bindTo(MeterRegistry registry){
-  register(registry,"chargehub.outbox.oldest.seconds","SELECT COALESCE(MAX(TIMESTAMPDIFF(SECOND,created_at,UTC_TIMESTAMP(3))),0) n FROM outbox_event WHERE status IN ('READY','PROCESSING')");
+  register(registry,"chargehub.outbox.oldest.seconds","SELECT COALESCE(MAX(TIMESTAMPDIFF(SECOND,created_at,UTC_TIMESTAMP(3))),0) n FROM outbox_event WHERE status IN ('READY','PROCESSING','PUBLISHED')");
   register(registry,"chargehub.outbox.failures","SELECT COALESCE(SUM(attempt_count),0) n FROM outbox_event WHERE last_error IS NOT NULL");
+  register(registry,"chargehub.messaging.dead","SELECT COUNT(*) n FROM message_delivery WHERE status='DEAD'");
+  register(registry,"chargehub.messaging.quarantined","SELECT COUNT(*) n FROM message_quarantine");
   register(registry,"chargehub.outbox.dead","SELECT COUNT(*) n FROM outbox_event WHERE status='DEAD'");
   register(registry,"chargehub.start.unknown","SELECT COUNT(*) n FROM charge_order WHERE status='EXCEPTION' AND exception_code='START_RESULT_UNKNOWN'");
   register(registry,"chargehub.meter.review","SELECT COUNT(*) n FROM charge_order WHERE status IN ('REVIEW','BILLING')");

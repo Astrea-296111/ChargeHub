@@ -4,6 +4,7 @@ import com.chargehub.infrastructure.BusinessException;
 import com.chargehub.infrastructure.Db;
 import com.chargehub.infrastructure.Json;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -20,8 +21,16 @@ import static com.chargehub.infrastructure.Db.*;
 public class StationService {
     private final Db db;
     private final Clock clock;
+    private final CatalogCache cache;
 
-    public StationService(Db db, Clock clock) { this.db = db; this.clock = clock; }
+    public StationService(Db db, Clock clock) { this(db, clock, CatalogCache.disabled()); }
+
+    @Autowired
+    public StationService(Db db, Clock clock, CatalogCache cache) {
+        this.db = db;
+        this.clock = clock;
+        this.cache = cache;
+    }
 
     public List<Map<String, Object>> list() {
         List<Map<String, Object>> result = new ArrayList<>();
@@ -36,6 +45,10 @@ public class StationService {
         if (limit < 1 || limit > 100 || (cursor != null && cursor < 1)) {
             throw new BusinessException(400, "INVALID_REQUEST", "分页数量须为1至100，游标须为有效正整数");
         }
+        return cache.read("stations:" + cursor + ":" + limit, () -> listFromDatabase(cursor, limit));
+    }
+
+    private Map<String, Object> listFromDatabase(Long cursor, int limit) {
         var rows = db.rows("SELECT s.*,t.version_no FROM station s LEFT JOIN tariff_plan t ON t.id=s.active_tariff_id WHERE s.status='ENABLED' AND s.id>? ORDER BY s.id LIMIT ?",
                 cursor == null ? 0L : cursor, limit + 1);
         boolean more = rows.size() > limit;
@@ -47,6 +60,10 @@ public class StationService {
     }
 
     public Map<String, Object> get(long stationId) {
+        return cache.read("station:" + stationId, () -> getFromDatabase(stationId));
+    }
+
+    private Map<String, Object> getFromDatabase(long stationId) {
         Map<String, Object> row = db.one("SELECT s.*,t.version_no FROM station s LEFT JOIN tariff_plan t ON t.id=s.active_tariff_id WHERE s.id=? AND s.status='ENABLED'", stationId);
         if (row == null) throw new BusinessException(404, "STATION_NOT_FOUND", "站点不存在");
         return station(row);
@@ -68,14 +85,16 @@ public class StationService {
     private Map<String, Object> connectorView(Map<String, Object> row) {
         return Map.of("connectorId", str(row, "id"), "deviceId", str(row, "device_id"),
                 "connectorCode", str(row, "connector_code"), "status", str(row, "status"),
-                "available", "IDLE".equals(str(row, "status")) && str(row, "active_order_no") == null);
+                "available", "IDLE".equals(str(row, "status")) && str(row, "active_order_no") == null
+                        && num(row, "operational_enabled") != 0);
     }
 
     /** Version is checked against the active published version, never a client supplied price. */
     public Map<String, Object> tariff(long connectorId, Long expectedVersion) {
-        Map<String, Object> row = db.one("SELECT s.id station_id,s.timezone,s.status station_status,t.id tariff_id,t.version_no,t.status,t.rule_hash FROM connector c JOIN station s ON s.id=c.station_id LEFT JOIN tariff_plan t ON t.id=s.active_tariff_id WHERE c.id=?", connectorId);
+        Map<String, Object> row = db.one("SELECT s.id station_id,s.timezone,s.status station_status,c.operational_enabled,t.id tariff_id,t.version_no,t.status,t.rule_hash FROM connector c JOIN station s ON s.id=c.station_id LEFT JOIN tariff_plan t ON t.id=s.active_tariff_id WHERE c.id=?", connectorId);
         if (row == null) throw new BusinessException(404, "CONNECTOR_NOT_FOUND", "充电枪不存在");
-        if (!"ENABLED".equals(str(row, "station_status")) || !"PUBLISHED".equals(str(row, "status"))) {
+        if (!"ENABLED".equals(str(row, "station_status")) || num(row, "operational_enabled") != 1
+                || !"PUBLISHED".equals(str(row, "status"))) {
             throw new BusinessException(409, "TARIFF_UNAVAILABLE", "站点没有可用的已发布费率");
         }
         if (expectedVersion != null && expectedVersion != num(row, "version_no")) {
@@ -93,6 +112,10 @@ public class StationService {
 
     public Map<String, Object> validatePublished(long connectorId, Long expectedVersion) {
         return tariff(connectorId, expectedVersion);
+    }
+
+    public Map<String, Object> displayTariff(long connectorId) {
+        return cache.read("connector-tariff:" + connectorId, () -> tariff(connectorId, null));
     }
 
     @Transactional
@@ -132,10 +155,15 @@ public class StationService {
         db.update("UPDATE tariff_plan SET status='PUBLISHED',published_at=?,rule_hash=? WHERE id=? AND status='DRAFT'",
                 clock.instant(), hash(num(tariff, "station_id"), num(tariff, "version_no"), str(station, "timezone"), slots), tariffId);
         db.update("UPDATE station SET active_tariff_id=? WHERE id=?", tariffId, num(tariff, "station_id"));
+        cache.invalidateAfterCommit();
         return tariffView(tariffId);
     }
 
     public Map<String, Object> tariffView(long id) {
+        return cache.read("tariff:" + id, () -> tariffViewFromDatabase(id));
+    }
+
+    private Map<String, Object> tariffViewFromDatabase(long id) {
         Map<String, Object> row = db.one("SELECT * FROM tariff_plan WHERE id=?", id);
         if (row == null) throw new BusinessException(404, "TARIFF_NOT_FOUND", "费率不存在");
         return Map.of("tariffId", str(row, "id"), "stationId", str(row, "station_id"), "versionNo", num(row, "version_no"),

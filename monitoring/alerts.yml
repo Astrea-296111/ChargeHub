@@ -1,0 +1,63 @@
+groups:
+  - name: chargehub-service
+    rules:
+      - alert: ChargeHubMetricsUnavailable
+        expr: up{job=~"chargehub.*"} == 0
+        for: 2m
+        labels: {severity: critical}
+        annotations: {summary: "ChargeHub metrics target unavailable for 2 minutes"}
+      - alert: ChargeHubHttpLatencyP95
+        expr: histogram_quantile(0.95, sum by (le,component) (rate(http_server_requests_seconds_bucket{uri!~"/actuator/.*"}[5m]))) > 0.5
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: "HTTP P95 above 500 ms for 5 minutes"}
+      - alert: ChargeHubHttp5xx
+        expr: sum by (component) (rate(http_server_requests_seconds_count{status=~"5.."}[5m])) / clamp_min(sum by (component) (rate(http_server_requests_seconds_count[5m])),0.001) > 0.01
+        for: 5m
+        labels: {severity: critical}
+        annotations: {summary: "HTTP 5xx ratio above 1 percent"}
+      - alert: ChargeHubDbConnectionWaiting
+        expr: max by (component) (hikaricp_connections_pending) > 0
+        for: 2m
+        labels: {severity: warning}
+        annotations: {summary: "Database clients waiting for a pooled connection"}
+      - alert: ChargeHubDbAcquireP95
+        expr: histogram_quantile(0.95, sum by (le,component) (rate(hikaricp_connections_acquire_seconds_bucket[5m]))) > 0.25
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: "Database connection acquisition P95 above 250 ms"}
+      - alert: ChargeHubOutboxDelayed
+        expr: max(chargehub_outbox_oldest_seconds) > 60
+        for: 2m
+        labels: {severity: critical}
+        annotations: {summary: "Outbox business intent older than 60 seconds"}
+      - alert: ChargeHubOutboxDead
+        expr: max(chargehub_outbox_dead) > 0
+        for: 1m
+        labels: {severity: critical}
+        annotations: {summary: "Outbox dead letters require audited investigation"}
+      - alert: ChargeHubUncertainExternalFacts
+        expr: max(chargehub_refund_unknown) + max(chargehub_start_unknown) > 0
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: "Payment refund or device start remains unknown"}
+      - alert: ChargeHubFinancialDifference
+        expr: max(chargehub_funds_differences) > 0
+        for: 1m
+        labels: {severity: critical}
+        annotations: {summary: "Financial difference or shortfall requires reconciliation"}
+      - alert: ChargeHubCouponInventoryViolation
+        expr: max(chargehub_coupon_inventory_violations) > 0
+        for: 1m
+        labels: {severity: critical}
+        annotations: {summary: "Coupon issuance differs from inventory facts"}
+      - alert: ChargeHubMessagingDead
+        expr: max(chargehub_messaging_dead) > 0
+        for: 1m
+        labels: {severity: critical}
+        annotations: {summary: "Message delivery dead letters require audited replay"}
+      - alert: ChargeHubMessagingQuarantined
+        expr: max(chargehub_messaging_quarantined) > 0
+        for: 1m
+        labels: {severity: critical}
+        annotations: {summary: "Conflicting or invalid message envelopes were quarantined"}
