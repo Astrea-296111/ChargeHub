@@ -3,6 +3,15 @@ services:
   mq-namesrv:
     cpus: 0.1
     mem_limit: 256m
+    # The main NameServer JVM fits this limit; starting a second mqadmin JVM
+    # every healthcheck caused a measured cgroup OOM. Probe its real TCP port
+    # without another JVM. Broker health still performs a real cluster query.
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/9876'"]
+      interval: 5s
+      timeout: 2s
+      retries: 20
+      start_period: 30s
   mq-broker:
     cpus: 1.0
     mem_limit: 1536m

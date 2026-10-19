@@ -75,6 +75,7 @@ def call(user, method, path, body=None, *, target='api', phase='setup', arrival=
     except (ValueError, OSError):
         row.update(status=None, classification='invalid_response')
     row['latencyMs'] = (time.perf_counter() - started) * 1000
+    row['arrivalLatencyMs'] = row['queueMs'] + row['latencyMs']
     record(row)
     return row, data
 
@@ -121,9 +122,12 @@ def schedule(total, rate, function, workers):
             delay = due - time.perf_counter()
             if delay > 0:
                 time.sleep(delay)
-            if time.perf_counter() - due > 1 / rate or not semaphore.acquire(blocking=False):
+            # A delayed scheduler must catch up against the original clock,
+            # rather than silently discard work while workers are available.
+            # The bounded in-flight capacity is the only admission limit.
+            if not semaphore.acquire(blocking=False):
                 record({'phase':'load','arrival':i,'scheduledAtSeconds':i/rate,'classification':'client_unsent',
-                        'reason':'scheduler_lag' if time.perf_counter() - due > 1 / rate else 'client_capacity',
+                        'reason':'client_capacity','queueMs':max(0,(time.perf_counter()-due)*1000),
                         'status':None,'latencyMs':None})
                 continue
             def work(index=i, intended=due):
@@ -234,6 +238,19 @@ def percentile(values,p):
     return sorted(values)[max(0,math.ceil(len(values)*p)-1)] if values else None
 
 
+def request_slo(sent,mode):
+    queries=[r['arrivalLatencyMs'] for r in sent if r.get('target')=='api' and r.get('method')=='GET' and r['classification']=='success']
+    creates=[r['arrivalLatencyMs'] for r in sent if r.get('method')=='POST' and r.get('path')=='/v1/charge-orders' and r['classification']=='success']
+    slo={'basis':'scheduled arrival to completed response, including client queueMs',
+         'querySuccessfulP95Ms':percentile(queries,.95),'queryLimitMs':300,
+         'createSuccessfulP95Ms':percentile(creates,.95),'createLimitMs':500,
+         'querySamples':len(queries),'createSamples':len(creates)}
+    if mode=='mixed':
+        slo['result']='PASS' if queries and creates and slo['querySuccessfulP95Ms']<300 and slo['createSuccessfulP95Ms']<500 else 'FAIL'
+    else:slo['result']='NOT_APPLICABLE_DEVICE_EVENT_PHASE'
+    return slo
+
+
 def main():
     global OUT, USERS
     parser=argparse.ArgumentParser()
@@ -263,28 +280,30 @@ def main():
     rows=[r for r in ROWS if r['phase']=='load'];sent=[r for r in rows if r['classification']!='client_unsent']
     counts=Counter(r['classification'] for r in rows)
     latencies=[r['latencyMs'] for r in sent if r.get('latencyMs') is not None]
+    arrival_latencies=[r['arrivalLatencyMs'] for r in sent if r.get('arrivalLatencyMs') is not None]
+    lags=[r.get('queueMs',0) for r in rows]
     per_operation={}
     for operation in sorted({r.get('operation') or 'unknown' for r in sent}):
         samples=[r for r in sent if (r.get('operation') or 'unknown')==operation]
         success=[r['latencyMs'] for r in samples if r['classification']=='success']
         all_latencies=[r['latencyMs'] for r in samples if r.get('latencyMs') is not None]
+        success_arrival=[r['arrivalLatencyMs'] for r in samples if r['classification']=='success']
+        all_arrival=[r['arrivalLatencyMs'] for r in samples if r.get('arrivalLatencyMs') is not None]
         per_operation[operation]={'requests':len(samples),'successfulRequests':len(success),
             'classifications':dict(Counter(r['classification'] for r in samples)),
             'allLatencyMs':{'P50':percentile(all_latencies,.5),'P95':percentile(all_latencies,.95),'P99':percentile(all_latencies,.99)},
-            'successfulLatencyMs':{'P50':percentile(success,.5),'P95':percentile(success,.95),'P99':percentile(success,.99)}}
-    queries=[r['latencyMs'] for r in sent if r.get('target')=='api' and r.get('method')=='GET' and r['classification']=='success']
-    creates=[r['latencyMs'] for r in sent if r.get('method')=='POST' and r.get('path')=='/v1/charge-orders' and r['classification']=='success']
-    slo={'querySuccessfulP95Ms':percentile(queries,.95),'queryLimitMs':300,
-         'createSuccessfulP95Ms':percentile(creates,.95),'createLimitMs':500,
-         'querySamples':len(queries),'createSamples':len(creates)}
-    if args.mode=='mixed':
-        slo['result']='PASS' if queries and creates and slo['querySuccessfulP95Ms']<300 and slo['createSuccessfulP95Ms']<500 else 'FAIL'
-    else:slo['result']='NOT_APPLICABLE_DEVICE_EVENT_PHASE'
+            'successfulLatencyMs':{'P50':percentile(success,.5),'P95':percentile(success,.95),'P99':percentile(success,.99)},
+            'allArrivalLatencyMs':{'P50':percentile(all_arrival,.5),'P95':percentile(all_arrival,.95),'P99':percentile(all_arrival,.99)},
+            'successfulArrivalLatencyMs':{'P50':percentile(success_arrival,.5),'P95':percentile(success_arrival,.95),'P99':percentile(success_arrival,.99)}}
+    slo=request_slo(sent,args.mode)
     report={'status':status,'simulated':True,'runId':os.environ['PERF_RUN_ID'],'mode':args.mode,
             'beganAt':began,'endedAt':now(),'parameters':vars(args),'loadElapsedSeconds':elapsed,
             'scheduledArrivals':arrivals,'observedArrivalRows':len(rows),'sentArrivals':len(sent),
             'classifications':dict(counts),'completedRequestsPerSecond':len(sent)/elapsed if elapsed else 0,
             'latencyMs':{'P50':percentile(latencies,.5),'P95':percentile(latencies,.95),'P99':percentile(latencies,.99)},
+            'arrivalLatencyMs':{'P50':percentile(arrival_latencies,.5),'P95':percentile(arrival_latencies,.95),'P99':percentile(arrival_latencies,.99)},
+            'lateArrivalCount':sum(lag>0 for lag in lags),'lateOverIntervalCount':sum(lag>1000/args.rate for lag in lags),
+            'maxLagMs':max(lags,default=0),'lateOverIntervalThresholdMs':1000/args.rate,
             'queueMsP95':percentile([r.get('queueMs',0) for r in sent],.95),'totalRawRows':len(ROWS),
             'allPhasesClassifications':dict(Counter(r['classification'] for r in ROWS)),
             'byPhase':{phase:dict(Counter(r['classification'] for r in ROWS if r['phase']==phase)) for phase in sorted({r['phase'] for r in ROWS})},

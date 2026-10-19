@@ -29,6 +29,8 @@ jobs:
         run: ./scripts/mvn.sh -B -ntp verify
       - name: Independent durable simulator gates
         run: python3 -m unittest discover -s simulators -p 'test_*.py' -v
+      - name: Open-arrival scheduler and latency accounting regressions
+        run: python3 -m unittest discover -s scripts/performance -p 'test_*.py' -v
       - name: Source-only multi-stage images, with optional private BuildKit trust/proxy mounts
         run: |
           python3 scripts/container/maven-settings.py
@@ -51,7 +53,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        gate: [mysql-suites, api-and-faults, rocketmq, redis-outage, backup-and-rollback]
+        gate: [mysql-suites, api-and-faults, rocketmq, redis-outage, backup-and-rollback, monitoring]
     env:
       DOCKER_CONFIG: ${{ github.workspace }}/.local/docker
     steps:
@@ -111,6 +113,13 @@ jobs:
           source .local/dev.env
           set +a
           python3 scripts/redis-acceptance.py --project chargehub-ci-redis
+      - name: Actual scrape replicas, metric histograms and provisioned Grafana
+        if: matrix.gate == 'monitoring'
+        run: |
+          python3 scripts/monitoring/setup.py
+          docker compose --env-file .local/dev.env -f compose.yaml -f compose-monitoring.yaml build scrape-proxy
+          docker compose --env-file .local/dev.env -f compose.yaml -f compose-monitoring.yaml up -d --no-build --scale worker=2 --wait --wait-timeout 240
+          python3 scripts/monitoring/verify.py
       - name: Build the actual previous Git revision for migration compatibility
         if: matrix.gate == 'backup-and-rollback'
         run: |
@@ -141,3 +150,4 @@ jobs:
         run: |
           docker compose --env-file .local/dev.env -f compose.yaml -f compose-mq.yaml down || true
           docker compose -p chargehub-ci-redis --env-file .local/dev.env down || true
+          docker compose --env-file .local/dev.env -f compose.yaml -f compose-monitoring.yaml down || true

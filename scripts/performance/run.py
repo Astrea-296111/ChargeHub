@@ -17,7 +17,8 @@ from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[2]
 COMPOSE=ROOT/'scripts/performance/compose.yaml'
-DOCKER_ENV={**os.environ,'DOCKER_CONFIG':str(ROOT/'.local/docker')}
+DOCKER_ENV={**os.environ,'DOCKER_CONFIG':str(ROOT/'.local/docker'),
+            'PERF_UID':str(os.getuid()),'PERF_GID':str(os.getgid())}
 
 
 def command(args,*,data=None,check=True):
@@ -52,10 +53,9 @@ def seed(compose,history,directory):
         seed_sql=f'''SET @station=(SELECT id FROM station ORDER BY id LIMIT 1);
 SET @tariff=(SELECT active_tariff_id FROM station WHERE id=@station);
 SET @snapshot=(SELECT JSON_OBJECT('tariffId',CAST(t.id AS CHAR),'stationId',CAST(s.id AS CHAR),'tariffVersion',t.version_no,'timezone',s.timezone,'ruleHash',t.rule_hash,'slots',(SELECT JSON_ARRAYAGG(JSON_OBJECT('startMinute',start_minute,'endMinute',end_minute,'energyRateFenPerKwh',energy_rate_fen_per_kwh,'serviceRateFenPerKwh',service_rate_fen_per_kwh)) FROM tariff_slot WHERE tariff_id=t.id)) FROM station s JOIN tariff_plan t ON t.id=s.active_tariff_id WHERE s.id=@station);
-CREATE TEMPORARY TABLE perf_digits(n INT PRIMARY KEY);
-INSERT INTO perf_digits VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9);
 CREATE TEMPORARY TABLE perf_users AS SELECT id,ROW_NUMBER() OVER(ORDER BY login_name) rn FROM iam_user WHERE login_name REGEXP '^perf[0-9]{{4}}$';
 INSERT IGNORE INTO charge_order(order_no,user_id,station_id,connector_id,tariff_id,status,financial_status,tariff_snapshot,payment_deadline,created_at,updated_at)
+WITH perf_digits AS (SELECT 0 n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9)
 SELECT CONCAT('f00d0000-0000-4000-8000-',LPAD(HEX(numbers.n),12,'0')),u.id,@station,10000+MOD(numbers.n,100),@tariff,'CANCELED','CLOSED',CAST(@snapshot AS JSON),'2025-01-01 00:05:00',TIMESTAMPADD(SECOND,numbers.n,'2025-01-01 00:00:00'),TIMESTAMPADD(SECOND,numbers.n,'2025-01-01 00:00:00')
 FROM (SELECT a.n+10*b.n+100*c.n+1000*d.n+10000*e.n+100000*f.n n FROM perf_digits a CROSS JOIN perf_digits b CROSS JOIN perf_digits c CROSS JOIN perf_digits d CROSS JOIN perf_digits e CROSS JOIN perf_digits f) numbers JOIN perf_users u ON u.rn=MOD(numbers.n,100)+1 WHERE numbers.n<{history};
 ANALYZE TABLE charge_order;

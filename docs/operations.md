@@ -27,7 +27,7 @@ docker compose --env-file .local/dev.env up -d --scale worker=2 worker
 
 `make mq-up` 启动固定摘要的 RocketMQ 5.5.0、初始化 Topic/Group，并将两个 Worker 切到 `rocketmq` 模式。默认 `db` 模式使用 MySQL 领取；同一 Outbox 同时只选择一种发布模式。切换前暂停写入、排空原模式在途任务，再切换所有 Worker，不能把模式切换作为未完成任务的删除手段。原生客户端为 5.2.2；开发网络关闭 TLS，真实环境须配置 TLS 和专用凭据。消息版本、Inbox、短租约、完成证据和重投机制见消息 ADR。
 
-`make monitoring-up` 启动仅本机开放的 Prometheus 9090 与 Grafana 3000。`__monitor__` 使用独立随机密码，应用只允许它访问自身身份、注销和 Prometheus 三个接口；采集代理续期短令牌，配置中没有长期 Bearer。Grafana 初始密码在 `.local/monitoring/grafana-admin-password`，勿放进问题报告。普通 OPS 账号保留正常运营权限。
+`make monitoring-up` 启动数据库轮询模式及仅本机开放的 Prometheus 9090 与 Grafana 3000。若当前运行 MQ，应先排空在途任务，再切换全部 Worker。当前32GB/vfs云机器要按拓扑顺序验收，避免将完整MQ、Grafana和压测项目同时叠加。`__monitor__` 使用独立随机密码，应用只允许它访问自身身份、注销和 Prometheus 三个接口；采集代理续期短令牌，配置中没有长期 Bearer。Grafana 初始密码在 `.local/monitoring/grafana-admin-password`，勿放进问题报告。普通 OPS 账号保留正常运营权限。
 
 运营台在 `/operations.html`，按需登录 `ops`、`finance`、`admin`。计量修正只能选择已有且属于该会话的原始证据，并由不同人复核；批准后仍不能改写已生成账单。财务恢复先查独立渠道，再走统一事实入口，UNKNOWN 不释放退款额度。真实金额/币种冲突保留 DIFF，不允许通过人工“设为成功”消除。
 
@@ -83,7 +83,7 @@ docker compose --env-file .local/dev.env exec -T mysql sh -c \
 test ! -s .local/backups/restore-invariants.tsv
 ```
 
-确认 Flyway 历史、核心表行数与代表订单的账单和流水，再将隔离应用指向 `chargehub_restore` 进行只读验收。记录恢复耗时、备份时间和验证订单。上述手工命令可按需执行；本次另通过 `make backup-check` 将 MySQL 备份恢复到新隔离库，14 张核心表行数与不变量均已核对。证据见 `docs/evidence/backup-restore.json`，这不包含模拟器卷恢复或应用镜像回滚。重新执行演练时使用新的隔离库名称；不要直接删除旧库。
+确认 Flyway 历史、核心表行数与代表订单的账单和流水，再将隔离应用指向 `chargehub_restore` 进行只读验收。记录恢复耗时、备份时间和验证订单。上述手工命令可按需执行；历史基线通过 `make backup-check` 将 MySQL 备份恢复到新隔离库，14 张核心表行数与不变量均已核对。该历史证据见 `docs/evidence/backup-restore.json`。当前完整 A46 另覆盖 V1–V8、旧镜像读取、11 表逐行摘要、MySQL 新库与双 SQLite 新卷恢复，证据见 `docs/evidence/enterprise/rollback.json`。重新执行演练时使用新的隔离库名称；不要直接删除旧库。
 
 模拟器的持久卷必须独立备份。SQLite 在线备份应使用 SQLite backup API，或在停止对应模拟器后备份卷；不能在写入过程中只复制主数据库文件而遗漏 WAL。恢复后先核对渠道业务号与设备会话事实，再恢复平台 Worker。
 

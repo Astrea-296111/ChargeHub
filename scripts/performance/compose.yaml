@@ -105,6 +105,9 @@ services:
   loadgen:
     image: python:3.12-slim@sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1
     profiles: [tools]
+    # Match the invoking account so private 0700 evidence/0600 source mounts
+    # remain readable and writable with all Linux capabilities removed.
+    user: "${PERF_UID:-1000}:${PERF_GID:-1000}"
     working_dir: /suite
     environment:
       CHARGEHUB_PERF_ISOLATED: "yes"

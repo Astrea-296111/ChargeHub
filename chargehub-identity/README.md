@@ -13,9 +13,22 @@
 | `POST` 或 `PUT /v1/admin/users/{id}/roles` | ADMIN；`{"roles":["CUSTOMER","OPS"],"reason":"运营岗位授权调整"}`，替换完整角色集合 |
 | `POST /v1/admin/users/{id}/tokens/revoke` | ADMIN；`{"reason":"账号安全处置撤销会话"}`，撤销目标用户全部有效令牌 |
 
-除登录外的写请求需要 `Idempotency-Key` 和5至255字符的 reason。可用角色只有 CUSTOMER、OPS、FINANCE、ADMIN。角色集合不接受未知值、空集合或重复值。角色变化、用户撤销令牌和用户登出均保存操作人、原因、结果及 requestId；幂等重放不重复审计。成功登出后该 Bearer 已失效，以它重试 HTTP 请求返回401；服务层仍保存幂等结果。
+除登录外的写请求需要 `Idempotency-Key` 和5至255字符的 reason。幂等键为8至64字符，仅接受字母、数字及 `._:-`，可使用随机 UUID；同一业务重试沿用原键和原正文。可用角色只有 CUSTOMER、OPS、FINANCE、ADMIN。角色集合不接受未知值、空集合或重复值。角色变化、用户撤销令牌和用户登出均保存操作人、原因、结果及 requestId；幂等重放不重复审计。成功登出后该 Bearer 已失效，以它重试 HTTP 请求返回401；服务层仍保存幂等结果。
 
 管理员操作先锁 `iam_admin_guard` 单例，再按用户ID升序预锁操作者与目标（同一用户去重），随后进入幂等操作；此用户锁顺序与会员授权协调器一致，避免跨领域互相授权形成反向等待。持锁后重新核对操作者 ADMIN，避免并发撤权后的旧请求继续授权。禁止移除最后一个 enabled 管理员。保留监控账号 `__monitor__` 不能通过角色接口变更，也不计为最后一个可用管理员；无论其角色如何，安全过滤器只允许它 GET 指标、GET 当前身份、POST 自己登出。
+
+## 配置
+
+| 配置 | 当前行为 |
+| --- | --- |
+| `CHARGEHUB_DEMO_PASSWORD` | `dev` 种子账号必需，至少12字符；`scripts/dev-env.py` 在私有 `.local/dev.env` 增量生成随机值 |
+| `CHARGEHUB_MONITOR_PASSWORD` | 独立监控密码，提供时至少16字符；本地 Compose 要求提供，由同一脚本生成 |
+| `CHARGEHUB_AUTH_LOGIN_ACCOUNT_LIMIT` | 每个账号每60秒最多尝试次数，默认10，允许1至100000 |
+| `CHARGEHUB_AUTH_LOGIN_ADDRESS_LIMIT` | 每个源地址每60秒最多尝试次数，默认60，允许1至100000 |
+| `chargehub.payment-key-id` / `device-key-id` / `control-key-id` | Spring 当前发送方 keyId，默认分别为 `payment`、`device`、`control` |
+| `chargehub.integration-keys.<keyId>.owner` / `.secret` | 显式注册重叠轮换 keyId 的所属集成与密钥，见下例 |
+
+种子账号只在 `dev` profile 创建，使用 `INSERT IGNORE` 保留已有用户。改变环境密码不会替换数据库中既存账号的密码摘要；监控代理的密码必须与已创建账号一致。`__monitor__` 是受限的 OPS 角色账号，不增加第五种角色；只允许 `GET /actuator/prometheus`、`GET /v1/auth/me`、`POST /v1/auth/logout`。它仍使用普通短期令牌和共享登录限流。演示凭证不应用于真实账号，配置示例不包含真实密钥。
 
 ## 共享限流与边界
 

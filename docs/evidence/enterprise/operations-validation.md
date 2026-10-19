@@ -18,4 +18,4 @@ python3 scripts/check-contracts.py --login --max-orders 100 \
 node scripts/browser/operations-smoke.cjs
 ```
 
-浏览器脚本使用已有 Playwright 和 `/usr/bin/chromium`，可通过 `CHARGEHUB_BROWSER_PATH` 指定 Chromium。仅验证待部署静态源码时可设置 `CHARGEHUB_UI_SOURCE_OVERLAY=1`；正式部署验收必须不设置此变量。脚本拦截并阻止除登录/退出以外的非读取业务请求，报告只记录路径、状态和断言，不保存密码、令牌或响应正文。
+浏览器依赖路径、版本、可选安装方式与全部配置见 [脚本复现说明](../../../scripts/browser/README.md)。仅验证待部署静态源码时可设置 `CHARGEHUB_UI_SOURCE_OVERLAY=1`；正式部署验收必须不设置此变量。脚本拦截并阻止除登录/退出以外的非读取业务请求，报告只记录路径、状态和断言，不保存密码、令牌或响应正文。

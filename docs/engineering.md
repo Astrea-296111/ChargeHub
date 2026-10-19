@@ -49,11 +49,11 @@ python3 scripts/performance/run.py --image <fixed-image-id> --sha <git-sha> \
 
 应用与依赖容器资源限制合计 4 vCPU / 8 GiB：MySQL 1 CPU / 2 GiB，API 1 / 2，Worker 0.4 / 1，RocketMQ Broker 1 / 1.5，NameServer 0.1 / 0.25，Redis 0.1 / 0.25，两个模拟器各 0.2 / 0.5。loadgen 另限 0.75 CPU / 512 MiB。实际宿主为 5 个逻辑 CPU，内存由报告记录 Docker 字节值；助手进程 cgroup 观测到 CPU quota 为 4 CPU、内存上限 32 GiB。容器配额、宿主容量与父 cgroup 限额是不同事实，不能将其描述成一台独占的 4 核 / 8 GB 物理服务器。正式阶段应停止无关测试和演示 Worker / 监控负载，并保存真实容器配置与机器信息。
 
-- 混合阶段使用固定随机种子、50 RPS、开放到达模型，覆盖站点、订单、权益、报价、建单、取消和领券。调度器不会在服务变慢后自行降低计划到达率；客户端容量不足或错过到达时间均写入 `client_unsent`。
+- 混合阶段使用固定随机种子、50 RPS、开放到达模型，覆盖站点、订单、权益、报价、建单、取消和领券。调度器不会在服务变慢后自行降低计划到达率；到达稍晚但仍有容量时继续发送并保留排队延迟，仅客户端容量耗尽时记录 `client_unsent`。
 - 会话阶段真实建立 100 笔支付与独立设备会话，每个会话每 5 秒上报一次计量，持续 1800 秒，随后确认停止、完整计量、账单和退款闭合。用户 token 在后续 API 查询前按 `expiresIn` 重新获取，登录与刷新请求同样保留。
 - 百万历史订单明确标记为合成的 `CANCELED/CLOSED` 未支付订单，不伪造资金流水或真实车流。执行现行用户 / 站点 `(created_at,id)` 游标查询及实际 `EXPLAIN FORMAT=JSON` / `EXPLAIN ANALYZE`，保留旧 `ORDER BY id` 查询作对照。
-- 每条请求保留计划序号、排队时间、耗时、HTTP 状态、错误分类和 requestId，不保存密码、token 或认证头。超时、技术错误、业务拒绝与客户端未发送分别计数，均不从分母中删除。
-- 汇总包含逐操作与总体 P50 / P95 / P99；成功查询 P95 < 300 ms、成功建单 P95 < 500 ms 分别检查。所有样本与成功样本分别统计，不能用整体混合 P95 代替建单指标。
+- 每条请求保留计划序号、排队时间、HTTP 耗时、从计划到达至完成的总延迟、状态、错误分类和 requestId，不保存密码、token 或认证头。超时、技术错误、业务拒绝与客户端未发送分别计数，均不从分母中删除。
+- 汇总包含逐操作与总体 P50 / P95 / P99，分别报告 HTTP 耗时和包含排队的到达总延迟；成功查询 P95 < 300 ms、成功建单 P95 < 500 ms 以到达总延迟检查。所有样本与成功样本分别统计，不能用整体混合 P95 代替建单指标。
 
 证据目录为 `.local/performance/<run-id>/`。`env` 是私有凭据文件，不可作为 artifact；可分享 `run.json`、各阶段 `summary.json` / `requests.jsonl`、容器资源快照、SQL 与执行计划。`--down` 停容器但保留卷与证据，禁止为了清理而覆盖演示库。
 
@@ -75,8 +75,12 @@ MySQL 使用一致性 dump，恢复目标始终是新数据库。两个独立 SQ
 
 ## CI 分层与实际状态
 
-`verify` workflow 将 unit / 独立模拟器 / 源码镜像构建与五个 backend gate 分开：所有真实 MySQL suite、HTTP 与故障恢复、真实 RocketMQ、Redis 实际清空 / 停机 / 恢复、备份与旧镜像回滚。矩阵各有独立 runner / 凭据，不并行修改同一数据库。artifact 白名单仅包含测试 XML 与脱敏 JSON / 不变量结果，不上传 `.local/**` 全目录、env、Maven secret、数据库 dump 或模拟器备份。
+`verify` workflow 将 unit / 独立模拟器 / 源码镜像构建与六个 backend gate 分开：所有真实 MySQL suite、HTTP 与故障恢复、真实 RocketMQ、Redis 实际清空 / 停机 / 恢复、备份与旧镜像回滚，以及实时监控。矩阵各有独立 runner / 凭据，不并行修改同一数据库。artifact 白名单仅包含测试 XML 与脱敏 JSON / 不变量结果，不上传 `.local/**` 全目录、env、Maven secret、数据库 dump 或模拟器备份。
 
 30 分钟会话负载不在默认 push / PR workflow 中运行。独立 `isolated-performance-manual` 需要显式触发与专用 `chargehub-perf` self-hosted runner，默认参数为 900 秒混合、1800 秒会话和百万历史订单。
 
-历史基线 Actions run `39135934161` 已通过：<https://github.com/Astrea-296111/ChargeHub/actions/runs/39135934161>。更新后的 workflow 只有在 GitHub 实际执行后才能记录新的成功状态，不能沿用历史绿灯作为新代码验证。
+候选 `9d61589` 的 Actions run [39282899907](https://github.com/Astrea-296111/ChargeHub/actions/runs/39282899907) 已实际完成：构建与单测，以及 MySQL、HTTP/故障、RocketMQ、Redis、备份回滚五个 backend gate 全部通过；[去敏结果](evidence/enterprise/github-ci-9d61589.json)。新增实时监控 gate 的执行结果须另行记录，不能沿用此绿灯。
+
+## 实际监控门禁
+
+`python3 scripts/monitoring/verify.py` 只读核对 API 与两个独立 Worker 采集目标、HTTP/连接池真实直方图、业务事实指标、12条告警规则，以及经身份认证的 Grafana 面板和实时数据源查询。报告只保存状态、目标标签和计数，不保存密码、token或原始指标。需先生成监控文件并启动相应拓扑；语法通过不当作运行通过。当前32GB/vfs云机器按拓扑顺序验证，完整MQ、Grafana和性能栈不同时运行。

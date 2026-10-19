@@ -1,8 +1,10 @@
 # A01–A47 验收映射与证据状态
 
-本表对应 `docs/spec/06-acceptance.md` 的全部 47 项。当前已核验候选 Git SHA：`302507165a4496ded25ac6ff0505a93869bec47c`。全量 Maven reactor 于 **2026-10-19 19:03:49（Asia/Shanghai；UTC 11:03:49）**结束：26 个 Java 测试类、128 项测试、0 失败、0 错误、0 跳过；其中 9 个真实依赖集成类共 38 项，另 90 项为单元/域测试。独立模拟器 21 项 Python 测试也已通过。8 个 Flyway 迁移在真实 MySQL 8.4 空库验证；Redis 测试使用专用 7.4 容器。
+本表对应 `docs/spec/06-acceptance.md` 的全部 47 项，更新日期为 **2026-10-19 UTC**。最终应用静态候选为 `9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1`，镜像 `sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714`；业务 Java、迁移及 POM 仍与已验证的 `302507165a4496ded25ac6ff0505a93869bec47c` 指纹一致。全量 Maven reactor 于 **2026-10-19 19:03:49（Asia/Shanghai；UTC 11:03:49）**结束：26 个 Java 测试类、128 项测试、0 失败、0 错误、0 跳过；其中 9 个真实依赖集成类共 38 项，另 90 项为单元/域测试。独立模拟器 21 项 Python 测试也已通过。8 个 Flyway 迁移在真实 MySQL 8.4 空库验证；Redis 测试使用专用 7.4 容器。
 
 可复核的去敏汇总为 [`evidence/enterprise/java-tests.json`](evidence/enterprise/java-tests.json)、[`evidence/enterprise/mysql-integration.json`](evidence/enterprise/mysql-integration.json)、[`evidence/enterprise/python-tests.json`](evidence/enterprise/python-tests.json)，包含逐方法结果、JUnit XML 摘要哈希、日志哈希及候选源码指纹，不复制 JVM 属性、环境变量或私密日志。旧 `docs/evidence/` 根目录的记录仍保留为历史，未用旧报告覆盖新候选。运行镜像 ID 由整栈门禁另行记录。
+
+远端 [9d61589 工作流](https://github.com/Astrea-296111/ChargeHub/actions/runs/39282899907) 的单元/镜像与五组后端任务共6组全部通过，见 [CI汇总](evidence/enterprise/github-ci-9d61589.json)。新增监控门禁、最终镜像无覆盖浏览器及严格响应契约复验仍待执行；A47尚未通过。
 
 **PASS**均注明实际验证层：真实 InnoDB/本地 Tomcat HTTP、纯计费函数或独立模拟器契约；不将这些结果冒充 Compose 进程崩溃、真实 Broker 故障、Redis 服务端停机、完整应用回滚或性能目标通过。**部分验证**表示已完成的子项有证据，完整场景仍待验证；**待验证**表示对应门禁尚无当前候选成功证据。跳过、仅 Broker 连通和仅断开测试连接工厂不等于完整故障验收通过。
 
@@ -67,13 +69,13 @@
 | A44 | 相同渠道账单重复/并发导入只一批、不重复补录 | `R` 的并发 12 导入；F 的幂等导入与 recoverBatch | **PASS（真实 MySQL）**：本次 R/F 均通过，12 并发导入一个批次，相同幂等导入/补录无二次现金效果 |
 | A45 | 对账金额不符保留双方证据，DIFF 阻止财务闭合 | F 的 A45；R 的双向差异/冲突方法 | **PASS（真实 MySQL）**：F 保留渠道 9999 与本地 10000 证据，原现金不变且 financial_status=DIFF，财务不能错误闭合 |
 | A46 | 应用切回旧镜像、迁移兼容，数据库及模拟器事实可恢复 | `scripts/deployment/rollback.py`；`sqlite-snapshot.py` | **PASS（真实旧镜像＋全新恢复副本）**：[完整报告](evidence/enterprise/rollback.json) 记录旧版空库、新版V1–V8与签名交易、旧镜像读取升级数据的11表逐行hash不变，再恢复MySQL到新库和双SQLite到新卷后由候选读取；零不变量违规。2项WAL/校验和工具回归通过，失败历史保留 |
-| A47 | 50RPS×15分钟、100会话×30分钟、百万历史、索引计划和P95目标 | `scripts/performance/run.py --phase all --history 1000000`；`scripts/performance/load.py` | 待验证；须使用固定 SHA 镜像和限制资源，报告 `.local/performance/<runId>/run.json`、逐请求数据、索引计划及资源快照；短 smoke 不能代替持续门禁 |
+| A47 | 50RPS×15分钟、100会话×30分钟、百万历史、索引计划和P95目标 | `scripts/performance/run.py --phase all --history 1000000`；`scripts/performance/load.py` | **FAIL，尚未通过**：既有15分钟轮次计划45000次，22次scheduler_lag漏发，实际发出44978次，其中42531成功、2447业务拒绝，技术错误/超时均0。新的完整重跑尚未完成；固定镜像、逐请求数据、索引计划及资源快照仍须随完整结果核验 |
 
 
 本轮全量执行的 `selectedTests=null`，9 个隔离测试库全部建立，128 项 Java 测试均未跳过，专用 Redis 测试容器在完成后清理。JUnit XML 与日志汇总类集合一致（26 类），逐方法结果及摘要见 J；同一运行的数据库名和完成标记见 enterprise/mysql-integration.json。源码审计确认本次 120 个 Java/迁移/POM 文件与候选 Git SHA 一致。
 
 Q 的同一次运行还遇到宿主磁盘空间不足，Broker 原日志显示 `message store is not writeable, so putMessage is forbidden 16`。释放空间后原 Outbox 自动退避重试成功，没有重置计数、改写资金事实或降低 Broker 磁盘保护阈值；A41 后窗口的发布次数 7 如实保留。该环境中断及原始证据路径记录在 Q 的 `environmentIncident`，没有通过重新运行隐藏中断。
 
-A39 的 Redis 服务端故障、A46 的完整回滚/卷恢复、A47 的持续性能仍保留原状态，等待各自门禁更新；数据库级仿真、已连接 Broker 的 smoke 或已提供脚本均不替代实际执行。历史失败/未完成日志保留，未用旧报告掩盖。
+A39 的真实 Redis 服务端故障与 A46 的完整回滚/卷恢复已有上述 PASS 证据。A47 保留既有失败结果，新的完整持续负载重跑尚未完成；历史失败日志保留。
 
-更新为 PASS 时至少记录：候选 Git SHA 或源码指纹、构建镜像 ID、实际执行时间、MySQL/Redis/RocketMQ 版本、具名测试/故障步骤、预期及实际值、原始报告位置。模拟支付/设备数据应始终标注模拟环境。当前云端 CI 是否触发是独立事实，提供 workflow 文件不表示远端 CI 已执行。
+更新为 PASS 时至少记录：候选 Git SHA 或源码指纹、构建镜像 ID、实际执行时间、MySQL/Redis/RocketMQ 版本、具名测试/故障步骤、预期及实际值、原始报告位置。模拟支付/设备数据应始终标注模拟环境。远端 CI 已执行的范围以对应提交的实际任务结果为准，后续新增门禁须另行验证。
