@@ -1,0 +1,1 @@
+SELECT o.*,s.session_no FROM charge_order o LEFT JOIN charge_session s ON s.order_no=o.order_no WHERE o.user_id=(SELECT id FROM iam_user WHERE login_name='perf0000') AND (o.created_at<'2026-01-01 00:00:00' OR (o.created_at='2026-01-01 00:00:00' AND o.id<9223372036854775807)) ORDER BY o.created_at DESC,o.id DESC LIMIT 21;

@@ -1,0 +1,74 @@
+{
+  "id": 39287529175,
+  "head_sha": "aaa2c265037249044c174abe3f5fc4f997b2d0e6",
+  "status": "completed",
+  "conclusion": "success",
+  "created_at": "2026-10-19T16:41:28Z",
+  "updated_at": "2026-10-19T16:51:30Z",
+  "html_url": "https://github.com/Astrea-296111/ChargeHub/actions/runs/39287529175",
+  "jobs": [
+    {
+      "id": 118178844494,
+      "name": "Unit / independent simulators / reproducible images",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-19T16:41:31Z",
+      "completed_at": "2026-10-19T16:43:48Z",
+      "html_url": "https://github.com/Astrea-296111/ChargeHub/actions/runs/39287529175/job/118178844494"
+    },
+    {
+      "id": 118180358263,
+      "name": "Backend / rocketmq",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-19T16:43:50Z",
+      "completed_at": "2026-10-19T16:51:29Z",
+      "html_url": "https://github.com/Astrea-296111/ChargeHub/actions/runs/39287529175/job/118180358263"
+    },
+    {
+      "id": 118180358394,
+      "name": "Backend / mysql-suites",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-19T16:43:50Z",
+      "completed_at": "2026-10-19T16:46:38Z",
+      "html_url": "https://github.com/Astrea-296111/ChargeHub/actions/runs/39287529175/job/118180358394"
+    },
+    {
+      "id": 118180358531,
+      "name": "Backend / api-and-faults",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-19T16:43:50Z",
+      "completed_at": "2026-10-19T16:45:55Z",
+      "html_url": "https://github.com/Astrea-296111/ChargeHub/actions/runs/39287529175/job/118180358531"
+    },
+    {
+      "id": 118180358539,
+      "name": "Backend / redis-outage",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-19T16:43:50Z",
+      "completed_at": "2026-10-19T16:45:52Z",
+      "html_url": "https://github.com/Astrea-296111/ChargeHub/actions/runs/39287529175/job/118180358539"
+    },
+    {
+      "id": 118180358652,
+      "name": "Backend / monitoring",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-19T16:43:50Z",
+      "completed_at": "2026-10-19T16:46:01Z",
+      "html_url": "https://github.com/Astrea-296111/ChargeHub/actions/runs/39287529175/job/118180358652"
+    },
+    {
+      "id": 118180358679,
+      "name": "Backend / backup-and-rollback",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-19T16:43:50Z",
+      "completed_at": "2026-10-19T16:47:24Z",
+      "html_url": "https://github.com/Astrea-296111/ChargeHub/actions/runs/39287529175/job/118180358679"
+    }
+  ]
+}

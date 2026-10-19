@@ -1,5 +1,5 @@
 {
-  "executedAt": "2026-10-19T11:13:06.364550+00:00",
+  "executedAt": "2026-10-19T17:37:04.942416+00:00",
   "api": "http://127.0.0.1:8080",
   "responseChecks": 34,
   "passed": 34,
@@ -279,6 +279,7 @@
       "reason": "No existing finance differences; no fixtures created"
     }
   ],
-  "deployedCandidate": "a212a8b4ffb91444c1170478995786c1f2780d02",
+  "deployedCandidate": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+  "deployedImageId": "sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714",
   "openapiSha256": "b68e8c2e01f0ef2ba18cc9590d0d0b46dd1fa7c0e9e9bdc46c5d9e66a01e6342"
 }

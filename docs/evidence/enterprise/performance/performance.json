@@ -1,0 +1,536 @@
+{
+  "status": "PASS",
+  "scope": "Synthetic isolated customer mixed workload and100charging sessions; not a production capacity claim and not a pass for unmeasured staff queries.",
+  "runId": "dab3d087b7cf",
+  "candidate": {
+    "imageId": "sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714",
+    "repoDigests": [],
+    "revision": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1"
+  },
+  "candidateSha": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+  "harnessGitHead": "aaa2c265037249044c174abe3f5fc4f997b2d0e6",
+  "harnessFileSha256": {
+    "scripts/performance/run.py": "25aa19b89e19c29d55339cc5c254329582f79398a5008018e0e1f9376e8f1178",
+    "scripts/performance/load.py": "7cf1ecdf95fc0c9da83a59fd7e8a548f1ea3862c4e9ee19a58f0774747ea9c8e",
+    "scripts/performance/compose.yaml": "80bcef7a1ec5a050f225f9accae44f3f3be1aa0261f82348e10be0942d7a15af",
+    "scripts/performance/compose-mq-limits.yaml": "bf6d33f3def2b70feb8fc77d748d0602cbd16412ff66bc0df2c9837fa2993980",
+    "compose-mq.yaml": "b84c3b6de01b448e671b8692a674b8a5993390670799c6730d16bc9940595c71",
+    "deploy/rocketmq/broker.conf": "f5370a2fb79ce3748a05b2294718a3c06cd44833da3df55b5fb4fd90ba9ca052",
+    "deploy/rocketmq/proxy.json": "13ad47be5112597bbfe352c1d5ff38b798440a3186cc42b37ba87471cacd6ffb"
+  },
+  "beganAt": "2026-10-19T16:45:23.274824+00:00",
+  "endedAt": "2026-10-19T17:33:32.606328+00:00",
+  "resources": {
+    "applicationContainerCpuLimitsTotal": 4.0,
+    "applicationMemoryLimitsBytesTotal": 8589934592,
+    "loadgenAdditionalCpuLimit": 0.75,
+    "loadgenAdditionalMemoryBytes": 536870912,
+    "machine": {
+      "hostLogicalCpuCount": 5,
+      "processCpuAffinity": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "processCgroupCpuMax": "400000 100000",
+      "processCgroupMemoryMax": "34359738368",
+      "hostLoadAverage": [
+        1.73291015625,
+        1.7041015625,
+        1.51708984375
+      ],
+      "workspaceFreeBytesBefore": 8473231360,
+      "docker": {
+        "NCPU": 5,
+        "MemTotal": 35743760384,
+        "ServerVersion": "28.4.0",
+        "Architecture": "x86_64",
+        "OperatingSystem": "Debian GNU/Linux 13 (trixie) (containerized)",
+        "KernelVersion": "6.18.55"
+      },
+      "hostMeminfo": [
+        "MemTotal:       34906016 kB",
+        "MemFree:        10171304 kB",
+        "MemAvailable:   30203696 kB"
+      ]
+    },
+    "containers": [
+      {
+        "name": "/chargehub-perf-dab3d087b7cf-api-1",
+        "imageId": "sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714",
+        "state": "running",
+        "cpus": 1.0,
+        "memoryLimitBytes": 2147483648,
+        "cpuSet": "",
+        "health": "healthy"
+      },
+      {
+        "name": "/chargehub-perf-dab3d087b7cf-device-1",
+        "imageId": "sha256:b6b5344535e71559c9aeeaa19e1ec7e82042f8edb81d44df8d849ebd7770dd7a",
+        "state": "running",
+        "cpus": 0.2,
+        "memoryLimitBytes": 536870912,
+        "cpuSet": "",
+        "health": "healthy"
+      },
+      {
+        "name": "/chargehub-perf-dab3d087b7cf-gateway-1",
+        "imageId": "sha256:b6b5344535e71559c9aeeaa19e1ec7e82042f8edb81d44df8d849ebd7770dd7a",
+        "state": "running",
+        "cpus": 0.2,
+        "memoryLimitBytes": 536870912,
+        "cpuSet": "",
+        "health": "healthy"
+      },
+      {
+        "name": "/chargehub-perf-dab3d087b7cf-mq-broker-1",
+        "imageId": "sha256:d31a324658c2324aef8fc19331951956e66abe75abe05885f736bb745465b970",
+        "state": "running",
+        "cpus": 1.0,
+        "memoryLimitBytes": 1610612736,
+        "cpuSet": "",
+        "health": "healthy"
+      },
+      {
+        "name": "/chargehub-perf-dab3d087b7cf-mq-namesrv-1",
+        "imageId": "sha256:d31a324658c2324aef8fc19331951956e66abe75abe05885f736bb745465b970",
+        "state": "running",
+        "cpus": 0.1,
+        "memoryLimitBytes": 268435456,
+        "cpuSet": "",
+        "health": "healthy"
+      },
+      {
+        "name": "/chargehub-perf-dab3d087b7cf-mysql-1",
+        "imageId": "sha256:0de4015d5b1f0fa462e43b48c29f8f66eacdd16d11e07aedf3b13533adadd504",
+        "state": "running",
+        "cpus": 1.0,
+        "memoryLimitBytes": 2147483648,
+        "cpuSet": "",
+        "health": "healthy"
+      },
+      {
+        "name": "/chargehub-perf-dab3d087b7cf-redis-1",
+        "imageId": "sha256:f84b0c4678011602b9b98c227a4dcd5468bf8b088b02fdd4165cb7758bad8058",
+        "state": "running",
+        "cpus": 0.1,
+        "memoryLimitBytes": 268435456,
+        "cpuSet": "",
+        "health": null
+      },
+      {
+        "name": "/chargehub-perf-dab3d087b7cf-worker-1",
+        "imageId": "sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714",
+        "state": "running",
+        "cpus": 0.4,
+        "memoryLimitBytes": 1073741824,
+        "cpuSet": "",
+        "health": "healthy"
+      }
+    ]
+  },
+  "history": {
+    "users": 100,
+    "connectors": 100,
+    "historicalOrders": 1000000,
+    "reusedHistoricalRows": true,
+    "elapsedSeconds": 3.3430741310003214,
+    "synthetic": true,
+    "historicalStatus": "CANCELED/CLOSED; no invented cash or charging sessions"
+  },
+  "mixed": {
+    "status": "PASS",
+    "beganAt": "2026-10-19T16:46:26.452595+00:00",
+    "endedAt": "2026-10-19T17:01:56.393726+00:00",
+    "parameters": {
+      "mode": "mixed",
+      "duration": 900.0,
+      "rate": 50,
+      "users": 100,
+      "workers": 64,
+      "seed": 20261018
+    },
+    "loadElapsedSeconds": 900.0574622929998,
+    "scheduledArrivals": 45000,
+    "observedArrivalRows": 45000,
+    "sentArrivals": 45000,
+    "classifications": {
+      "success": 42461,
+      "business_rejection": 2539
+    },
+    "latencyMs": {
+      "P50": 4.807500998140313,
+      "P95": 44.90826898836531,
+      "P99": 123.55747299443465
+    },
+    "arrivalLatencyMs": {
+      "P50": 5.130941994138993,
+      "P95": 45.4460869950708,
+      "P99": 124.75463398732245
+    },
+    "queueMsP95": 0.5508920003194362,
+    "lateArrivalCount": 45000,
+    "lateOverIntervalCount": 23,
+    "maxLagMs": 187.1938349941047,
+    "perOperation": {
+      "benefits": {
+        "requests": 4426,
+        "successfulRequests": 4426,
+        "classifications": {
+          "success": 4426
+        },
+        "allLatencyMs": {
+          "P50": 2.7311449957778677,
+          "P95": 8.704214997123927,
+          "P99": 50.88407700532116
+        },
+        "successfulLatencyMs": {
+          "P50": 2.7311449957778677,
+          "P95": 8.704214997123927,
+          "P99": 50.88407700532116
+        },
+        "allArrivalLatencyMs": {
+          "P50": 2.949849993456155,
+          "P95": 9.583993989508599,
+          "P99": 58.671060993219726
+        },
+        "successfulArrivalLatencyMs": {
+          "P50": 2.949849993456155,
+          "P95": 9.583993989508599,
+          "P99": 58.671060993219726
+        }
+      },
+      "cancel": {
+        "requests": 2722,
+        "successfulRequests": 2722,
+        "classifications": {
+          "success": 2722
+        },
+        "allLatencyMs": {
+          "P50": 28.683675001957454,
+          "P95": 65.81799499690533,
+          "P99": 186.80876000144053
+        },
+        "successfulLatencyMs": {
+          "P50": 28.683675001957454,
+          "P95": 65.81799499690533,
+          "P99": 186.80876000144053
+        },
+        "allArrivalLatencyMs": {
+          "P50": 28.921570992679335,
+          "P95": 66.14857699605636,
+          "P99": 188.07930598268285
+        },
+        "successfulArrivalLatencyMs": {
+          "P50": 28.921570992679335,
+          "P95": 66.14857699605636,
+          "P99": 188.07930598268285
+        }
+      },
+      "claim": {
+        "requests": 870,
+        "successfulRequests": 0,
+        "classifications": {
+          "business_rejection": 870
+        },
+        "allLatencyMs": {
+          "P50": 5.230718001257628,
+          "P95": 18.388868003967218,
+          "P99": 63.21984299574979
+        },
+        "successfulLatencyMs": {
+          "P50": null,
+          "P95": null,
+          "P99": null
+        },
+        "allArrivalLatencyMs": {
+          "P50": 5.428909003967419,
+          "P95": 19.899046994396485,
+          "P99": 63.329468001029454
+        },
+        "successfulArrivalLatencyMs": {
+          "P50": null,
+          "P95": null,
+          "P99": null
+        }
+      },
+      "create": {
+        "requests": 3142,
+        "successfulRequests": 1473,
+        "classifications": {
+          "success": 1473,
+          "business_rejection": 1669
+        },
+        "allLatencyMs": {
+          "P50": 14.137481004581787,
+          "P95": 40.724556005443446,
+          "P99": 121.64558800577652
+        },
+        "successfulLatencyMs": {
+          "P50": 22.88133100955747,
+          "P95": 55.45496000559069,
+          "P99": 185.25599900749512
+        },
+        "allArrivalLatencyMs": {
+          "P50": 15.344123996328562,
+          "P95": 41.806671986705624,
+          "P99": 122.48721499054227
+        },
+        "successfulArrivalLatencyMs": {
+          "P50": 23.096172997611575,
+          "P95": 56.44103299709968,
+          "P99": 185.44574399129488
+        }
+      },
+      "orders": {
+        "requests": 11278,
+        "successfulRequests": 11278,
+        "classifications": {
+          "success": 11278
+        },
+        "allLatencyMs": {
+          "P50": 32.889045993215404,
+          "P95": 88.13594300590921,
+          "P99": 247.17244699422736
+        },
+        "successfulLatencyMs": {
+          "P50": 32.889045993215404,
+          "P95": 88.13594300590921,
+          "P99": 247.17244699422736
+        },
+        "allArrivalLatencyMs": {
+          "P50": 33.14031398622319,
+          "P95": 88.58628198504448,
+          "P99": 248.3156410016818
+        },
+        "successfulArrivalLatencyMs": {
+          "P50": 33.14031398622319,
+          "P95": 88.58628198504448,
+          "P99": 248.3156410016818
+        }
+      },
+      "quote": {
+        "requests": 6855,
+        "successfulRequests": 6855,
+        "classifications": {
+          "success": 6855
+        },
+        "allLatencyMs": {
+          "P50": 3.1263510027201846,
+          "P95": 9.702591996756382,
+          "P99": 44.2411750118481
+        },
+        "successfulLatencyMs": {
+          "P50": 3.1263510027201846,
+          "P95": 9.702591996756382,
+          "P99": 44.2411750118481
+        },
+        "allArrivalLatencyMs": {
+          "P50": 3.3407119917683303,
+          "P95": 10.562338997260667,
+          "P99": 45.80070199153852
+        },
+        "successfulArrivalLatencyMs": {
+          "P50": 3.3407119917683303,
+          "P95": 10.562338997260667,
+          "P99": 45.80070199153852
+        }
+      },
+      "stations": {
+        "requests": 15707,
+        "successfulRequests": 15707,
+        "classifications": {
+          "success": 15707
+        },
+        "allLatencyMs": {
+          "P50": 2.994673006469384,
+          "P95": 9.24306400702335,
+          "P99": 43.80037199007347
+        },
+        "successfulLatencyMs": {
+          "P50": 2.994673006469384,
+          "P95": 9.24306400702335,
+          "P99": 43.80037199007347
+        },
+        "allArrivalLatencyMs": {
+          "P50": 3.2117829978233203,
+          "P95": 9.915193993947469,
+          "P99": 44.464769001933746
+        },
+        "successfulArrivalLatencyMs": {
+          "P50": 3.2117829978233203,
+          "P95": 9.915193993947469,
+          "P99": 44.464769001933746
+        }
+      }
+    },
+    "slo": {
+      "basis": "scheduled arrival to completed response, including client queueMs",
+      "querySuccessfulP95Ms": 49.634570998023264,
+      "queryLimitMs": 300,
+      "createSuccessfulP95Ms": 56.44103299709968,
+      "createLimitMs": 500,
+      "querySamples": 32716,
+      "createSamples": 1473,
+      "result": "PASS"
+    },
+    "totalRawRows": 45156,
+    "allPhasesClassifications": {
+      "success": 42617,
+      "business_rejection": 2539
+    },
+    "byPhase": {
+      "cleanup": {
+        "success": 56
+      },
+      "load": {
+        "success": 42461,
+        "business_rejection": 2539
+      },
+      "setup": {
+        "success": 100
+      }
+    },
+    "completedSessionCount": 0
+  },
+  "sessions": {
+    "status": "PASS",
+    "beganAt": "2026-10-19T17:01:59.156704+00:00",
+    "endedAt": "2026-10-19T17:33:25.031897+00:00",
+    "parameters": {
+      "mode": "sessions",
+      "duration": 1800.0,
+      "rate": 50,
+      "users": 100,
+      "workers": 64,
+      "seed": 20261018
+    },
+    "loadElapsedSeconds": 1800.055929278009,
+    "scheduledArrivals": 36000,
+    "observedArrivalRows": 36000,
+    "sentArrivals": 36000,
+    "classifications": {
+      "success": 36000
+    },
+    "latencyMs": {
+      "P50": 5.376700006308965,
+      "P95": 99.55496600014158,
+      "P99": 201.04685200203676
+    },
+    "arrivalLatencyMs": {
+      "P50": 5.715639010304585,
+      "P95": 100.20408799755387,
+      "P99": 201.61979501426686
+    },
+    "queueMsP95": 0.9089390077861026,
+    "lateArrivalCount": 36000,
+    "lateOverIntervalCount": 13,
+    "maxLagMs": 212.78114900633227,
+    "perOperation": {
+      "meter_5s": {
+        "requests": 36000,
+        "successfulRequests": 36000,
+        "classifications": {
+          "success": 36000
+        },
+        "allLatencyMs": {
+          "P50": 5.376700006308965,
+          "P95": 99.55496600014158,
+          "P99": 201.04685200203676
+        },
+        "successfulLatencyMs": {
+          "P50": 5.376700006308965,
+          "P95": 99.55496600014158,
+          "P99": 201.04685200203676
+        },
+        "allArrivalLatencyMs": {
+          "P50": 5.715639010304585,
+          "P95": 100.20408799755387,
+          "P99": 201.61979501426686
+        },
+        "successfulArrivalLatencyMs": {
+          "P50": 5.715639010304585,
+          "P95": 100.20408799755387,
+          "P99": 201.61979501426686
+        }
+      }
+    },
+    "slo": {
+      "basis": "scheduled arrival to completed response, including client queueMs",
+      "querySuccessfulP95Ms": null,
+      "queryLimitMs": 300,
+      "createSuccessfulP95Ms": null,
+      "createLimitMs": 500,
+      "querySamples": 0,
+      "createSamples": 0,
+      "result": "NOT_APPLICABLE_DEVICE_EVENT_PHASE"
+    },
+    "totalRawRows": 37413,
+    "allPhasesClassifications": {
+      "success": 37231,
+      "business_rejection": 182
+    },
+    "byPhase": {
+      "cleanup": {
+        "business_rejection": 182,
+        "success": 931
+      },
+      "load": {
+        "success": 36000
+      },
+      "setup": {
+        "success": 300
+      }
+    },
+    "completedSessionCount": 100,
+    "effectiveArrivalRateRps": 20,
+    "actualArrivalIntervalMs": 50,
+    "lateOverActualArrivalIntervalCount": 8,
+    "historicalLagMetadata": {
+      "rawSummaryRateArgument": 50,
+      "rawSummaryThresholdMs": 20,
+      "rawSummaryOverThresholdCount": 13,
+      "rawSummaryUnchanged": true,
+      "note": "Only presentation metadata was corrected after measurement; raw requests, scheduled arrivals, windows and SLO remain unchanged."
+    }
+  },
+  "tokenRefreshRequests": 100,
+  "independentChannel": {
+    "status": "PASS",
+    "matchedSessionCount": 100,
+    "uniquePayNos": 100,
+    "uniqueProviderTradeNos": 100,
+    "uniqueRefundNos": 100,
+    "uniqueProviderRefundNos": 100,
+    "sourceUnchanged": true,
+    "totals": {
+      "capturedFen": 1000000,
+      "refundSuccessFen": 953200,
+      "channelNetFen": 46800,
+      "platformBillPayableFen": 46800
+    }
+  },
+  "postLoadInvariantViolations": 0,
+  "rawRequestRows": 82569,
+  "allRawClassifications": {
+    "success": 79848,
+    "business_rejection": 2721
+  },
+  "evidenceIndex": "evidence-index.json",
+  "channelProof": "channel-proof.json",
+  "knownLimitations": [
+    "Retained original900s FAIL:22 scheduler_lag arrivals were discarded; scheduler was corrected and the complete workload was rerun.",
+    "Retained corrected-generator cold10s smoke FAIL due initial slow station responses; warmed smoke PASS, followed by complete untrimmed900+1800s measurement.",
+    "Staff station-order EXPLAIN ANALYZE scanned569569 rows and took1307ms; this endpoint is not in the measured customer query SLO.",
+    "Customer historical cursor plan scanned10000 rows in33.3ms despite its index; index usage alone is not proof of bounded work."
+  ],
+  "publicArtifacts": {
+    "mixedSummary": "current/mixed-summary.json",
+    "mixedRaw": "current/mixed-requests.jsonl.gz",
+    "sessionsSummary": "current/sessions-summary.json",
+    "sessionsRaw": "current/sessions-requests.jsonl.gz",
+    "invariants": "current/invariants.tsv"
+  }
+}

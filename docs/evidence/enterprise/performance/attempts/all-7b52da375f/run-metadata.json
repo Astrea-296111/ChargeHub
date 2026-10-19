@@ -1,0 +1,20 @@
+{
+  "runId": "dab3d087b7cf",
+  "phase": "all",
+  "result": "FAIL",
+  "beganAt": "2026-10-19T16:20:16.750544+00:00",
+  "endedAt": "2026-10-19T16:36:53.439773+00:00",
+  "sha": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+  "candidateImageId": "sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714",
+  "harnessGitHead": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+  "harnessFileSha256": {
+    "scripts/performance/run.py": "25aa19b89e19c29d55339cc5c254329582f79398a5008018e0e1f9376e8f1178",
+    "scripts/performance/load.py": "e88b27c654b64f69a2d219e06700df13f76da8b9f47d8c657f8821c5c9d6dc77",
+    "scripts/performance/compose.yaml": "80bcef7a1ec5a050f225f9accae44f3f3be1aa0261f82348e10be0942d7a15af",
+    "scripts/performance/compose-mq-limits.yaml": "bf6d33f3def2b70feb8fc77d748d0602cbd16412ff66bc0df2c9837fa2993980",
+    "compose-mq.yaml": "b84c3b6de01b448e671b8692a674b8a5993390670799c6730d16bc9940595c71",
+    "deploy/rocketmq/broker.conf": "f5370a2fb79ce3748a05b2294718a3c06cd44833da3df55b5fb4fd90ba9ca052",
+    "deploy/rocketmq/proxy.json": "13ad47be5112597bbfe352c1d5ff38b798440a3186cc42b37ba87471cacd6ffb"
+  },
+  "diagnostic": "Original scheduler full 900-second run FAIL: 22 arrivals discarded solely on scheduler_lag; the short-circuit branch did not check capacity. Preserved unchanged, with original load.py source and hash. Sessions were not run in this failed attempt."
+}

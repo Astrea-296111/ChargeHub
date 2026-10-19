@@ -31,11 +31,13 @@ make monitoring-up
 
 业务指标来自数据库事实与 Micrometer，Grafana 不含固定造数曲线。HTTP 与 Hikari 连接获取 histograms 在 overlay 中显式启用。12 条规则覆盖真实 HTTP P95 / 5xx、DB 等待与连接获取 P95、Outbox 延迟 / 死信、消息投递死信 / 隔离、退款和启动未知状态、资金差异、券库存不变量。共享业务库 gauge 在 API / Worker 间采用 `max`，避免重复相加。
 
-固定 Prometheus 镜像中的 `promtool check config` 已实际通过，包含 12 条规则；日志 `.local/promtool.log`。这只证明规则语法与加载配置，真实 scrape、仪表盘与告警触发必须另记录运行结果。规则评估可在 Prometheus 本地 Alerts 页面检查；未配置对外通知渠道。
+固定 Prometheus 镜像中的 `promtool check config` 已实际通过，包含 12 条规则；日志 `.local/promtool.log`。远端 `aaa2c26` 的实时采集、规则评估、Grafana 仪表盘及数据源查询门禁也已通过，见下方 CI 结果；本机最终镜像的监控复验仍待执行。该门禁不代表已验证全部告警触发或对外通知，当前未配置对外通知渠道。
 
 ## 隔离压测
 
 入口为 `scripts/performance/run.py`，不会接受任意 API URL。它创建随机 Compose project、独立 MySQL 数据库、独立 Redis / RocketMQ / 支付与设备模拟器卷，以及独立 Python loadgen 容器。没有向宿主发布端口，不访问演示库、演示卷或公共服务。镜像先解析为不可变 image ID，并核对 OCI revision 与 `--sha`。
+
+当前持续负载固定应用候选为 `9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1`，镜像 `sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714`。后续 `aaa2c26` 只变更工具、文档及监控门禁，未替换此压测镜像；A47完整重跑尚未结束。
 
 ```bash
 # 先在固定候选上执行短 smoke，但数据规模仍为百万历史订单。
@@ -57,7 +59,15 @@ python3 scripts/performance/run.py --image <fixed-image-id> --sha <git-sha> \
 
 证据目录为 `.local/performance/<run-id>/`。`env` 是私有凭据文件，不可作为 artifact；可分享 `run.json`、各阶段 `summary.json` / `requests.jsonl`、容器资源快照、SQL 与执行计划。`--down` 停容器但保留卷与证据，禁止为了清理而覆盖演示库。
 
-当前已记录三次真实失败且没有产生业务负载或百万合成数据：第一轮 Compose 时间值未加引号，第二轮 inline tmpfs 被逗号拆分，第三轮出现磁盘空间不足。对应 run 为 `44dfff832bf1`、`0f9fcbdbdcb1`、`6d08246a1d17`。时间 / tmpfs 与异常清理路径已修正；仅在核对项目标签、确认无容器附着并获维护授权后，清除了这三个未初始化成功的专属卷，所有失败报告与日志仍保留。完整性能结果必须以后续固定候选的实际报告为准。
+### 百万历史查询边界与后续优化
+
+既有 `.local/performance/dab3d087b7cf/` 执行计划显示：站点管理订单游标经 LEFT HASH JOIN 后排序，处理569569行，约1307ms；用户订单游标处理10000行，约33ms。这是该样本的单次 SQL 实测，不是列表 HTTP P95。混合 HTTP 查询 P95覆盖客户站点、本人订单及权益读取，不覆盖管理员历史订单列表，不能据此宣称所有列表均达到300ms。
+
+静态审阅提出的候选方案是在订单派生表内完成全部过滤、`(created_at,id)` 排序和 `LIMIT limit+1`，再按唯一 `charge_session.order_no` 连接会话，并在外层保留同序排序。该方案尚未实施或实测，当前固定候选保持原查询。后续需验证相同时间戳的游标边界、站点/状态筛选、有无会话及逐页无重复遗漏，再复测实际执行计划。全局列表或稀疏 `status` 过滤还需单独审阅索引计划，不能仅靠提前限页推断扫描成本。
+
+A47完整运行已实际PASS：900.057秒混合负载45000/45000请求发出，42461成功、2539业务拒绝；含排队成功查询P95为49.63ms、建单56.44ms。随后1800.056秒100会话计量36000/36000全部成功，100会话均COMPLETED/CLOSED，每会话3600Wh。独立支付SQLite只读逐笔核对100笔捕获/退款，合计捕获1000000分、退款953200分、净收46800分，与正式账单相等；读取前后SQLite/WAL/SHM哈希不变。SQL不变量零违规。
+
+[公开证据入口](evidence/enterprise/performance/README.md) 保存固定镜像、实测拓扑（API1、Worker1）、全部6份逐请求gzip及哈希、12次尝试索引、原始SQL/执行计划和两版实测工具源码。9次失败与3次通过分别列明：旧发生器900秒因22次调度漏发FAIL、冷启动10秒因延迟FAIL均未删除，后续修复没有放宽阈值。原始会话summary的rate展示沿用mixed默认50，实际调度始终为100/5=20RPS；未来仅元数据展示修正，原始报告保持原样并附50ms间隔的派生统计。
 
 ## A46 升级、应用回滚和恢复
 
@@ -79,8 +89,10 @@ MySQL 使用一致性 dump，恢复目标始终是新数据库。两个独立 SQ
 
 30 分钟会话负载不在默认 push / PR workflow 中运行。独立 `isolated-performance-manual` 需要显式触发与专用 `chargehub-perf` self-hosted runner，默认参数为 900 秒混合、1800 秒会话和百万历史订单。
 
-候选 `9d61589` 的 Actions run [39282899907](https://github.com/Astrea-296111/ChargeHub/actions/runs/39282899907) 已实际完成：构建与单测，以及 MySQL、HTTP/故障、RocketMQ、Redis、备份回滚五个 backend gate 全部通过；[去敏结果](evidence/enterprise/github-ci-9d61589.json)。新增实时监控 gate 的执行结果须另行记录，不能沿用此绿灯。
+提交 `aaa2c265037249044c174abe3f5fc4f997b2d0e6` 的 Actions run [39287529175](https://github.com/Astrea-296111/ChargeHub/actions/runs/39287529175) 已实际完成，7组全部PASS：unit/images及MySQL、HTTP/故障、RocketMQ、Redis、备份回滚、实时监控六个 backend gate；[去敏结果](evidence/enterprise/github-ci-aaa2c26.json)。该提交只更新工具、文档及监控门禁，持续压测仍固定上述9d61589/f02应用候选。本机最终监控、无覆盖四角色浏览器与34项严格契约复验也已通过，业务写入0，见 [最终部署](evidence/enterprise/runtime-final.json) 和 [浏览器记录](evidence/enterprise/operations-validation.md)。
 
 ## 实际监控门禁
 
 `python3 scripts/monitoring/verify.py` 只读核对 API 与两个独立 Worker 采集目标、HTTP/连接池真实直方图、业务事实指标、12条告警规则，以及经身份认证的 Grafana 面板和实时数据源查询。报告只保存状态、目标标签和计数，不保存密码、token或原始指标。需先生成监控文件并启动相应拓扑；语法通过不当作运行通过。当前32GB/vfs云机器按拓扑顺序验证，完整MQ、Grafana和性能栈不同时运行。
+
+上述门禁已在远端 `aaa2c26` 工作流及本机最终部署实际PASS；[本机报告](evidence/enterprise/monitoring.json) 记录三个采集目标、逐实例有限指标、12条规则与10个仪表盘面板，未声称已验证对外告警通知或故障触发。

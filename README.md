@@ -64,6 +64,8 @@ python3 scripts/demo.py --username customer --order <订单UUID>
 
 GitHub 仓库：<https://github.com/Astrea-296111/ChargeHub>。验收入口与逐项证据见 [A01–A47 验收矩阵](docs/acceptance-matrix.md)。源码存在、测试通过和持续性能达标分别记录。
 
+当前已通过128项Java回归、21项独立模拟器测试、34项严格响应契约及四角色浏览器复验。百万合成历史订单下，50RPS持续15分钟与100会话持续30分钟均完成；含排队的客户查询/建单P95为49.63/56.44ms。原始结果、失败历史与管理端查询限制见 [持续负载证据](docs/evidence/enterprise/performance/README.md)，不作为生产容量承诺。
+
 运行接口见 [docs/openapi.yaml](docs/openapi.yaml)，原始资料保存在 [docs/spec](docs/spec/README.md)。公开源码的实际阅读与取舍见 [设计参考](docs/references/README.md)。技术取舍见 [架构 ADR](docs/decisions/ADR-001-architecture.md)，运维见 [运行手册](docs/operations.md)，实际结果见 [验证记录](docs/validation.md)。
 
 服务间签名覆盖方法、路径、时间戳、nonce 和原始请求体SHA256。签名密钥分别使用 `CHARGEHUB_PAYMENT_KEY`、`CHARGEHUB_DEVICE_KEY`，模拟控制密钥为 `CHARGEHUB_CONTROL_KEY`。模拟器是一个受信任网关身份；首版尚未提供每台物理设备的独立密钥分发。

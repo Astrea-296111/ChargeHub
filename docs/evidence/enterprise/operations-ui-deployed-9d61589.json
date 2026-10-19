@@ -1,0 +1,238 @@
+{
+  "simulated": true,
+  "execution": "real-browser-http",
+  "simulationScope": "Local payment and device channels; browser and HTTP responses are real",
+  "api": "http://127.0.0.1:8080",
+  "executedAt": "2026-10-19T17:37:26.245Z",
+  "sourceOverlay": false,
+  "businessWrites": 0,
+  "roles": [
+    {
+      "username": "ops",
+      "checks": [
+        "Real login succeeds and clears password input",
+        "Empty filtered order list renders an explicit safe empty state",
+        "Role-specific finance, Outbox and audit sections match permissions",
+        "Existing authenticated meter evidence and policy render without issuing decisions",
+        "Logout returns to login and previous token is rejected401"
+      ]
+    },
+    {
+      "username": "finance",
+      "checks": [
+        "Real login succeeds and clears password input",
+        "Empty filtered order list renders an explicit safe empty state",
+        "Role-specific finance, Outbox and audit sections match permissions",
+        "Existing authenticated meter evidence and policy render without issuing decisions",
+        "Empty finance list renders an explicit safe empty state",
+        "Read-only audit list renders",
+        "Logout returns to login and previous token is rejected401"
+      ]
+    },
+    {
+      "username": "admin",
+      "checks": [
+        "Real login succeeds and clears password input",
+        "Empty filtered order list renders an explicit safe empty state",
+        "Role-specific finance, Outbox and audit sections match permissions",
+        "Load-more appends distinct real rows using nextCursor (read page size1)",
+        "Existing authenticated meter evidence and policy render without issuing decisions",
+        "Empty finance list renders an explicit safe empty state",
+        "Read-only audit list renders",
+        "DEAD Outbox list or explicit empty state renders",
+        "DONE tasks render with replay disabled",
+        "Logout returns to login and previous token is rejected401"
+      ]
+    },
+    {
+      "username": "customer",
+      "checks": [
+        "Real login succeeds and clears password input",
+        "CUSTOMER rejected from staff workspace and token automatically revoked"
+      ]
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "requests": [
+    {
+      "username": "ops",
+      "path": "/v1/auth/token",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "username": "ops",
+      "path": "/v1/admin/charge-orders",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "username": "ops",
+      "path": "/v1/admin/charge-orders",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "username": "ops",
+      "path": "/v1/admin/charge-orders/92db06fd-25fb-4ed1-bac6-87cab7b32fb4/meter-review",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "username": "ops",
+      "path": "/v1/auth/logout",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "username": "finance",
+      "path": "/v1/auth/token",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "username": "finance",
+      "path": "/v1/admin/charge-orders",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "username": "finance",
+      "path": "/v1/admin/charge-orders",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "username": "finance",
+      "path": "/v1/admin/charge-orders/92db06fd-25fb-4ed1-bac6-87cab7b32fb4/meter-review",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "username": "finance",
+      "path": "/v1/admin/reconciliation-items",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "username": "finance",
+      "path": "/v1/admin/audits",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "username": "finance",
+      "path": "/v1/auth/logout",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "username": "admin",
+      "path": "/v1/auth/token",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "username": "admin",
+      "path": "/v1/admin/charge-orders",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "username": "admin",
+      "path": "/v1/admin/charge-orders",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "username": "admin",
+      "path": "/v1/admin/charge-orders",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "username": "admin",
+      "path": "/v1/admin/charge-orders/92db06fd-25fb-4ed1-bac6-87cab7b32fb4/meter-review",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "username": "admin",
+      "path": "/v1/admin/reconciliation-items",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "username": "admin",
+      "path": "/v1/admin/audits",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "username": "admin",
+      "path": "/v1/admin/outbox",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "username": "admin",
+      "path": "/v1/admin/outbox",
+      "method": "GET",
+      "status": 200
+    },
+    {
+      "username": "admin",
+      "path": "/v1/auth/logout",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "username": "customer",
+      "path": "/v1/auth/token",
+      "method": "POST",
+      "status": 200
+    },
+    {
+      "username": "customer",
+      "path": "/v1/auth/logout",
+      "method": "POST",
+      "status": 200
+    }
+  ],
+  "blockedWrites": [],
+  "browserVersion": "154.0.8037.57",
+  "amountFormatting": {
+    "missing": "—",
+    "absent": "—",
+    "empty": "—",
+    "zero": "¥0.00",
+    "positive": "¥1.23",
+    "negative": "¥-1.23"
+  },
+  "status": "PASS",
+  "deployedCandidate": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+  "deployedImageId": "sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714",
+  "deployedOperationsScriptSha256": "7e139b1921eb53a2885dc2e411d519919a5af8d494a82a64ef0c0151c851c7d5",
+  "deploymentVerifiedAt": "2026-10-19T17:38:02.740478+00:00",
+  "deployment": [
+    {
+      "container": "chargehub-api-1",
+      "imageId": "sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714",
+      "revision": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+      "health": "healthy"
+    },
+    {
+      "container": "chargehub-worker-1",
+      "imageId": "sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714",
+      "revision": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+      "health": "healthy"
+    },
+    {
+      "container": "chargehub-worker-2",
+      "imageId": "sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714",
+      "revision": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+      "health": "healthy"
+    }
+  ]
+}

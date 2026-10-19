@@ -1,0 +1,284 @@
+{
+  "executedAt": "2026-10-19T11:13:06.364550+00:00",
+  "api": "http://127.0.0.1:8080",
+  "responseChecks": 34,
+  "passed": 34,
+  "failed": 0,
+  "validatedSchemas": [
+    "AdminConnectorListResponse",
+    "AdminCouponTemplatePageResponse",
+    "AdminCouponTemplateRecordResponse",
+    "AdminStationPageResponse",
+    "AdminUserPageResponse",
+    "AuditPageResponse",
+    "BenefitsResponse",
+    "BillResponse",
+    "CouponPageResponse",
+    "CouponTemplatePageResponse",
+    "CurrentUserResponse",
+    "DisplayTariffResponse",
+    "Error",
+    "FundsResponse",
+    "MembershipRecordResponse",
+    "MeterReviewResponse",
+    "OrderPageResponse",
+    "OrderResponse",
+    "OutboxTaskPageResponse",
+    "ReconciliationPageResponse",
+    "StaffOrderPageResponse",
+    "StationPageResponse",
+    "StationResponse",
+    "TariffResponse",
+    "TokenResponse"
+  ],
+  "businessWrites": 0,
+  "authenticationMode": "login-permitted",
+  "checks": [
+    {
+      "path": "/v1/auth/token",
+      "schema": "TokenResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/auth/me",
+      "schema": "CurrentUserResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/stations",
+      "schema": "StationPageResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/stations?limit=1",
+      "schema": "StationPageResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/me/benefits",
+      "schema": "BenefitsResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/me/coupons",
+      "schema": "CouponPageResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/coupon-templates",
+      "schema": "CouponTemplatePageResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/charge-orders?limit=100",
+      "schema": "OrderPageResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/charge-orders/92db06fd-25fb-4ed1-bac6-87cab7b32fb4",
+      "schema": "OrderResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/charge-orders/92db06fd-25fb-4ed1-bac6-87cab7b32fb4/funds",
+      "schema": "FundsResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/charge-orders/92db06fd-25fb-4ed1-bac6-87cab7b32fb4/bill",
+      "schema": "BillResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/admin/charge-orders?limit=1",
+      "schema": "Error",
+      "httpStatus": 403,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/auth/token",
+      "schema": "TokenResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/admin/reconciliation-items",
+      "schema": "ReconciliationPageResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/admin/audits?limit=1",
+      "schema": "AuditPageResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/admin/charge-orders?limit=1",
+      "schema": "StaffOrderPageResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/auth/token",
+      "schema": "TokenResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/admin/charge-orders?limit=100",
+      "schema": "StaffOrderPageResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/admin/charge-orders/92db06fd-25fb-4ed1-bac6-87cab7b32fb4/meter-review",
+      "schema": "MeterReviewResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/admin/stations?limit=1",
+      "schema": "AdminStationPageResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/admin/stations?limit=1&cursor=1",
+      "schema": "AdminStationPageResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/admin/stations/1/connectors",
+      "schema": "AdminConnectorListResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/stations/1",
+      "schema": "StationResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/admin/tariffs/1",
+      "schema": "TariffResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/connectors/1/tariff",
+      "schema": "DisplayTariffResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/admin/coupon-templates?limit=1",
+      "schema": "AdminCouponTemplatePageResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/admin/coupon-templates/1",
+      "schema": "AdminCouponTemplateRecordResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/admin/memberships/2",
+      "schema": "MembershipRecordResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/auth/token",
+      "schema": "TokenResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/admin/users?limit=1",
+      "schema": "AdminUserPageResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/admin/users?limit=1&cursor=1",
+      "schema": "AdminUserPageResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/admin/outbox?status=DEAD&limit=1",
+      "schema": "OutboxTaskPageResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/admin/outbox?status=DONE&limit=1",
+      "schema": "OutboxTaskPageResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    },
+    {
+      "path": "/v1/admin/outbox?status=PUBLISHED&limit=1",
+      "schema": "OutboxTaskPageResponse",
+      "httpStatus": 200,
+      "passed": true,
+      "schemaErrors": []
+    }
+  ],
+  "skipped": [
+    {
+      "schema": "FinanceItemDetailResponse/FinanceBatchDetailResponse",
+      "reason": "No existing finance differences; no fixtures created"
+    }
+  ],
+  "deployedCandidate": "a212a8b4ffb91444c1170478995786c1f2780d02",
+  "openapiSha256": "b68e8c2e01f0ef2ba18cc9590d0d0b46dd1fa7c0e9e9bdc46c5d9e66a01e6342"
+}

@@ -1,0 +1,74 @@
+[
+  {
+    "name": "/chargehub-perf-dab3d087b7cf-api-1",
+    "imageId": "sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714",
+    "state": "running",
+    "cpus": 1.0,
+    "memoryLimitBytes": 2147483648,
+    "cpuSet": "",
+    "health": "healthy"
+  },
+  {
+    "name": "/chargehub-perf-dab3d087b7cf-device-1",
+    "imageId": "sha256:b6b5344535e71559c9aeeaa19e1ec7e82042f8edb81d44df8d849ebd7770dd7a",
+    "state": "running",
+    "cpus": 0.2,
+    "memoryLimitBytes": 536870912,
+    "cpuSet": "",
+    "health": "healthy"
+  },
+  {
+    "name": "/chargehub-perf-dab3d087b7cf-gateway-1",
+    "imageId": "sha256:b6b5344535e71559c9aeeaa19e1ec7e82042f8edb81d44df8d849ebd7770dd7a",
+    "state": "running",
+    "cpus": 0.2,
+    "memoryLimitBytes": 536870912,
+    "cpuSet": "",
+    "health": "healthy"
+  },
+  {
+    "name": "/chargehub-perf-dab3d087b7cf-mq-broker-1",
+    "imageId": "sha256:d31a324658c2324aef8fc19331951956e66abe75abe05885f736bb745465b970",
+    "state": "running",
+    "cpus": 1.0,
+    "memoryLimitBytes": 1610612736,
+    "cpuSet": "",
+    "health": "healthy"
+  },
+  {
+    "name": "/chargehub-perf-dab3d087b7cf-mq-namesrv-1",
+    "imageId": "sha256:d31a324658c2324aef8fc19331951956e66abe75abe05885f736bb745465b970",
+    "state": "running",
+    "cpus": 0.1,
+    "memoryLimitBytes": 268435456,
+    "cpuSet": "",
+    "health": "healthy"
+  },
+  {
+    "name": "/chargehub-perf-dab3d087b7cf-mysql-1",
+    "imageId": "sha256:0de4015d5b1f0fa462e43b48c29f8f66eacdd16d11e07aedf3b13533adadd504",
+    "state": "running",
+    "cpus": 1.0,
+    "memoryLimitBytes": 2147483648,
+    "cpuSet": "",
+    "health": "healthy"
+  },
+  {
+    "name": "/chargehub-perf-dab3d087b7cf-redis-1",
+    "imageId": "sha256:f84b0c4678011602b9b98c227a4dcd5468bf8b088b02fdd4165cb7758bad8058",
+    "state": "running",
+    "cpus": 0.1,
+    "memoryLimitBytes": 268435456,
+    "cpuSet": "",
+    "health": null
+  },
+  {
+    "name": "/chargehub-perf-dab3d087b7cf-worker-1",
+    "imageId": "sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714",
+    "state": "running",
+    "cpus": 0.4,
+    "memoryLimitBytes": 1073741824,
+    "cpuSet": "",
+    "health": "healthy"
+  }
+]

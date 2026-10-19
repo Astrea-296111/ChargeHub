@@ -1,0 +1,9 @@
+test_arrival_latency_preserves_queue_and_wire_time (test_load.ArrivalSchedulerTest.test_arrival_latency_preserves_queue_and_wire_time) ... ok
+test_capacity_exhaustion_is_explicitly_recorded (test_load.ArrivalSchedulerTest.test_capacity_exhaustion_is_explicitly_recorded) ... ok
+test_late_scheduler_catches_up_when_capacity_is_available (test_load.ArrivalSchedulerTest.test_late_scheduler_catches_up_when_capacity_is_available) ... ok
+test_slo_uses_arrival_latency_instead_of_wire_latency (test_load.ArrivalSchedulerTest.test_slo_uses_arrival_latency_instead_of_wire_latency) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.210s
+
+OK

@@ -1,0 +1,10 @@
+{
+  "status": "PASS",
+  "capturedAt": "2026-10-19T17:32:55.654500+00:00",
+  "afterMeasurement": true,
+  "observedLoadRows": 36000,
+  "postLoadCleanupObserved": true,
+  "rows": 100,
+  "mappingSha256": "a2b738e5ea4f09a2770ac0b802d2b65cad5b03c82c5a5a0fa36753987edf5510",
+  "scope": "One read-only SELECT in the existing isolated MySQL container after the actual meter window ended; exports only orderNo/payNo."
+}

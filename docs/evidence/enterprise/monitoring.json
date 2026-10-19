@@ -1,0 +1,146 @@
+{
+  "status": "PASS",
+  "simulated": true,
+  "executedAt": "2026-10-19T17:36:56.708927+00:00",
+  "checks": [
+    {
+      "check": "API and both worker replicas actually scraped",
+      "result": "PASS",
+      "targets": [
+        {
+          "component": "api",
+          "replica": null,
+          "health": "up"
+        },
+        {
+          "component": "worker",
+          "replica": "1",
+          "health": "up"
+        },
+        {
+          "component": "worker",
+          "replica": "2",
+          "health": "up"
+        }
+      ]
+    },
+    {
+      "check": "Real metric series: http_server_requests_seconds_bucket",
+      "result": "PASS",
+      "seriesCount": 666,
+      "targets": [
+        {
+          "component": "api",
+          "replica": null,
+          "seriesCount": 148
+        },
+        {
+          "component": "worker",
+          "replica": "1",
+          "seriesCount": 222
+        },
+        {
+          "component": "worker",
+          "replica": "2",
+          "seriesCount": 296
+        }
+      ]
+    },
+    {
+      "check": "Real metric series: hikaricp_connections_acquire_seconds_bucket",
+      "result": "PASS",
+      "seriesCount": 207,
+      "targets": [
+        {
+          "component": "api",
+          "replica": null,
+          "seriesCount": 69
+        },
+        {
+          "component": "worker",
+          "replica": "1",
+          "seriesCount": 69
+        },
+        {
+          "component": "worker",
+          "replica": "2",
+          "seriesCount": 69
+        }
+      ]
+    },
+    {
+      "check": "Real metric series: chargehub_outbox_oldest_seconds",
+      "result": "PASS",
+      "seriesCount": 3,
+      "targets": [
+        {
+          "component": "api",
+          "replica": null,
+          "seriesCount": 1
+        },
+        {
+          "component": "worker",
+          "replica": "1",
+          "seriesCount": 1
+        },
+        {
+          "component": "worker",
+          "replica": "2",
+          "seriesCount": 1
+        }
+      ]
+    },
+    {
+      "check": "Real metric series: chargehub_funds_differences",
+      "result": "PASS",
+      "seriesCount": 3,
+      "targets": [
+        {
+          "component": "api",
+          "replica": null,
+          "seriesCount": 1
+        },
+        {
+          "component": "worker",
+          "replica": "1",
+          "seriesCount": 1
+        },
+        {
+          "component": "worker",
+          "replica": "2",
+          "seriesCount": 1
+        }
+      ]
+    },
+    {
+      "check": "Alert rules loaded and evaluated",
+      "result": "PASS",
+      "ruleCount": 12
+    },
+    {
+      "check": "Authenticated provisioned Grafana dashboard and live datasource query",
+      "result": "PASS",
+      "dashboardUid": "chargehub-operations",
+      "panels": 10,
+      "targets": [
+        {
+          "component": "api",
+          "replica": null,
+          "seriesCount": 1
+        },
+        {
+          "component": "worker",
+          "replica": "1",
+          "seriesCount": 1
+        },
+        {
+          "component": "worker",
+          "replica": "2",
+          "seriesCount": 1
+        }
+      ]
+    }
+  ],
+  "scope": "Actual authenticated scrape proxy, two worker replicas, Prometheus and provisioned Grafana. No domain writes.",
+  "elapsedSeconds": 0.122
+}

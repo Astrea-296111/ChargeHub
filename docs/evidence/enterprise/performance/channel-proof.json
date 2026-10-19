@@ -1,0 +1,1342 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-19T17:34:22.973675+00:00",
+  "runId": "dab3d087b7cf",
+  "method": "Independent gateway SQLite mode=ro, query_only; exact platform orderNo to payNo join",
+  "sourceHashesBefore": {
+    "payment.sqlite3": "7745ec3a2f7117d7ed4741be4c9a867639c3c4e3f66ed3c5092e55b9951eb338",
+    "payment.sqlite3-wal": "40ee2e7fb578a7a2f499af079ab26a892d3bfd028c09e335d59b613caa9739cb",
+    "payment.sqlite3-shm": "5b9946adbe00c667ba29abc7aea8049812f4b4e2c223f12ac381bb0fcd8e2380"
+  },
+  "sourceHashesAfter": {
+    "payment.sqlite3": "7745ec3a2f7117d7ed4741be4c9a867639c3c4e3f66ed3c5092e55b9951eb338",
+    "payment.sqlite3-wal": "40ee2e7fb578a7a2f499af079ab26a892d3bfd028c09e335d59b613caa9739cb",
+    "payment.sqlite3-shm": "5b9946adbe00c667ba29abc7aea8049812f4b4e2c223f12ac381bb0fcd8e2380"
+  },
+  "sourceUnchanged": true,
+  "sqliteVersion": "3.46.1",
+  "verifierSha256": "006d2de8b06e24900e422e595d2735c049c3c9ac3e1641ffb2e4c43f02168789",
+  "sessionCount": 100,
+  "matchedSessionCount": 100,
+  "uniquePayNos": 100,
+  "uniqueProviderTradeNos": 100,
+  "uniqueRefundNos": 100,
+  "uniqueProviderRefundNos": 100,
+  "totals": {
+    "capturedFen": 1000000,
+    "refundSuccessFen": 953200,
+    "channelNetFen": 46800,
+    "platformBillPayableFen": 46800
+  },
+  "perOrder": [
+    {
+      "orderNo": "9a4f836e-315b-4ef6-bdf1-b67e06f7ba82",
+      "payNo": "921fb17a-5b50-4134-b1fb-2e1460d8cbea",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "7a808579-2cc5-4f79-80f9-b96b9ac7ba6a"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "b5d3299e-78b0-4c6b-a11d-e88b0cf9f63f",
+      "payNo": "32fb4c71-c0b2-4232-b1cc-ad5df9066edf",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "f9c6be3e-7a10-42fc-a4aa-e89d566f3422"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "84cd1d2f-bfbf-4437-a484-f54e883c60a5",
+      "payNo": "eccb2cf8-7a51-4080-a27b-ad5f1e9c7b2c",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "4cdf0c76-4f2f-4064-aa93-7a8647a2c430"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "a2da7102-5da5-4450-b5be-6365b44c8898",
+      "payNo": "488af44e-9ac1-4790-8355-d798cd7e7e75",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "f2768869-8099-47c8-b480-c5281b6e8348"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "d25fc419-00a2-45eb-a7aa-aeb7d0c124ba",
+      "payNo": "d6ce95ba-99bb-4948-b402-49b5e7be5bee",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "23043e2b-f28e-48e1-b97b-35062e31e224"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "108bc85b-c4fd-49ea-93b5-a9b28b909efe",
+      "payNo": "fe7a033d-f62f-4a3e-842b-c1b9f76a9189",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "d37382ac-d602-4c9b-83d4-caa19f5521b7"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "02bffd33-d6f1-4faf-817c-99b57dfbe546",
+      "payNo": "723b0078-d381-4e2f-901b-d8d383d618b1",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "84079be7-a0d3-4b2e-84a7-21dbad80367b"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "f61b3903-c78a-4dcb-a422-6d21bb0eea57",
+      "payNo": "f6ae9a54-1977-41ed-9286-c06a562e2a8e",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "61de2f57-a4a7-4328-bd1b-54f426d106c2"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "fd9158b6-6ecd-4ec5-9e1f-0da3813271cb",
+      "payNo": "96bed6bc-0b20-4f14-b324-8db354607ed1",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "ff968834-203b-4316-b12b-ed5816d41fe2"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "5737679a-2ac6-4ab1-8b20-6279d866aff0",
+      "payNo": "cd27f5b3-d4f5-4a87-9244-ce64139ad7f7",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "e39a20bb-618b-407e-8053-ed387629fb47"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "1ad9c4c4-fcd6-4a60-939c-18beeb57254f",
+      "payNo": "445f5c15-5bcb-460c-8f82-ef061d4a0b02",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "f6e1aa21-0638-418e-838a-5175a837028c"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "ba9857f3-39eb-4d41-a437-fb664f351764",
+      "payNo": "3e9fd936-6091-4b95-b67d-192147719289",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "82d52c91-b0fb-4be7-bfa0-f2e258d42772"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "a0e40d1f-96d8-4f85-bfe5-38a201858cdf",
+      "payNo": "71362c27-5269-44b1-a29e-786b92d28e48",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "35c3a1fd-7dc8-441f-88b0-3486e59879f7"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "857b118b-f634-4a0e-8c5e-d99dcda3b9a2",
+      "payNo": "c7d43f80-96be-4aba-b0da-f6bedf54492b",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "21eca6ef-1e42-4831-9dc8-7cfd7763c40d"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "c7a0aa44-9dca-4ae5-844e-21c37c22c157",
+      "payNo": "64976363-675a-45b2-9c8d-018bd77f9fe5",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "ab699d98-c045-402a-ad81-24f06dc7cf05"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "365c54aa-6137-4baa-9cba-50b59b7f2b26",
+      "payNo": "bdbc5861-7163-45ce-b85f-01835db290d4",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "bfa545d1-7a38-4416-861c-8c85b39a0ed1"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "413886e2-e931-4cc6-bc62-e90e2d77ee5a",
+      "payNo": "1be3f9c0-df53-4e6f-b748-a429530af381",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "66c5755b-5804-4351-8ef9-3d8e60290a34"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "abcc425f-a662-441b-b3c0-b7e6e0846121",
+      "payNo": "cdd41c19-aa3a-406f-a2e1-44b0325e84d2",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "cb8c8d7c-75e0-42dc-aba9-3b39733e0ead"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "e745f3f1-ee9f-4f4b-93ff-2358f4f2e2fd",
+      "payNo": "9bdcd997-bf6b-4f4b-b1a6-23d9ac979792",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "01f0d8ef-29b3-437d-b06f-7dafae5c39f3"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "ba5682fb-776d-4290-945f-e39b02dfeed1",
+      "payNo": "31a51984-62b0-4df0-ba63-074fca8cec0f",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "9319458e-d772-4975-949c-68d7a640253d"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "be9b64d0-417e-455e-a5c7-ecdbe5b9e0e9",
+      "payNo": "55e260eb-d0c3-4f0f-b77b-ae1c0057730b",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "463d61ac-3b96-46a2-9869-dfd0b4980277"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "5a052232-a222-457a-b0f9-d76b75770390",
+      "payNo": "4fdfebcd-7bd3-443b-ae8b-8da06e1ca5da",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "c2febe0f-67f4-47ff-955f-14d2842f59aa"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "d603ac00-b7e3-49f6-813b-15da777edaa2",
+      "payNo": "50fd348b-b56f-402f-a8b5-26a242df4591",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "6c30ad62-7e30-4119-8727-60f8434bfaad"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "da1399b1-f673-40c7-aa10-be89658125ea",
+      "payNo": "43260754-f76a-4758-8fd9-c2c1ba7adc0e",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "11d2415f-5d30-4540-9dc6-e5580c8abd9e"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "5cb73026-eb19-4d58-adaa-3171b5e3bc8f",
+      "payNo": "a4faba7c-df25-42c2-a7a9-b1defbefc315",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "3271b4ab-e5b6-4c0a-a541-7e505abc9014"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "3fb1e30c-4cf3-4d6b-a757-e2f515b7f3d7",
+      "payNo": "3b02eaef-6218-42f6-aefe-6ea2d7e15e1a",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "0cba4afe-709f-416c-9cee-160c704e9ac0"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "b6a9975b-dd73-45bf-a2df-9fc5fef94be0",
+      "payNo": "919d951e-3056-46da-8d93-7660b1f4e92c",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "44a947d2-fffe-4070-9e48-601f9e17b93f"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "b50df63c-d3d5-47b0-b75a-5614395e298b",
+      "payNo": "eadbc7f0-71d7-44b7-8c14-de90d8955254",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "97e76d04-9bc3-496e-9f94-b6a0ffa82dfd"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "31014360-75aa-472a-abe9-66e782a4fef6",
+      "payNo": "411ad282-03ec-43ee-8381-596e979a6737",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "42e4b139-c794-4688-b5f6-e54944aec22c"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "7cd55b05-4ce9-48f8-83bc-623172816759",
+      "payNo": "1e57ed7a-b43c-4c87-b837-ac184d79ee30",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "b65ed5ba-eda1-4bc7-8080-01f7a9dfd6db"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "f2b1f530-e83f-40ea-9133-17627f6dcadc",
+      "payNo": "25f63ccc-daf4-45c6-b9d7-6461cb050995",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "68656e16-5630-4614-9bd9-dc571a7bf40d"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "fea3fbb5-42a7-495d-b81b-740b29ba5d46",
+      "payNo": "5ba245cd-b344-4be8-a65b-4dded9ad54e8",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "57e546cd-9ea9-40de-9728-3a2245bd5ba8"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "5ac287ed-fbf9-44e9-9f97-445d02c0a420",
+      "payNo": "f068dd59-54d7-4319-908b-59deae4c0a33",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "f1a0a60a-0428-4a67-8ea0-a14c9f9ecc96"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "7b4ea9fc-fb82-42b9-bedb-0720f5fb6538",
+      "payNo": "c9b47cd5-32b5-4009-8586-d5a8076cdd7b",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "ee8446ab-c4ab-4d04-9712-582e7b557141"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "79243b6a-d47a-4ad0-82d2-e7d89a3126c0",
+      "payNo": "0d11b6a6-6d6e-4fbc-961b-b9cdfefac38e",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "10eb3f01-0ac5-4b02-ad9b-924a859a160c"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "051b0d4a-f2f4-468f-89c3-83b83d9cce6e",
+      "payNo": "572a02a7-f7f0-474e-b9d7-60b9445d4128",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "4ba91cab-d7cf-42d8-bba4-0fa26472504c"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "5188d47c-3faf-4091-b24f-5bb576904b0d",
+      "payNo": "4328c7eb-f878-4a84-b466-87a8d5e02fb3",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "f72c6be1-3514-4b87-8117-f427716f8644"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "3f6b9256-31f2-4660-b259-378f7cac65a2",
+      "payNo": "db3a5527-df04-46f9-afd7-01d4fc6a9c92",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "c5977359-78f3-4ef8-944f-53624e4007ab"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "cfa0ac4f-5dd3-4410-924b-1e296d2cb654",
+      "payNo": "7227579f-9db0-4582-9f9f-f6929547c48d",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "7fd01b4f-e805-4fa1-bcb4-3e7d279904cf"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "2a280d6e-a52c-496b-8675-ee48159afa9d",
+      "payNo": "09d6498a-51c8-4cd8-9e1f-ab6e11282efd",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "2ceaddc1-d9eb-4c2c-8d87-9a1c94f959f9"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "a8dc40c1-f264-48ae-bc74-63ef9d43f661",
+      "payNo": "6c39dde9-62fa-4b04-bb3d-76c90ef27526",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "554f1224-8c89-4a08-9c78-b1bfda2a7518"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "dba5cd20-98fa-444b-9c99-a5d2fae13b1f",
+      "payNo": "534629bd-fc3a-4911-b6a1-deb7a210a071",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "6c061f63-82fd-4df5-88ef-31505ac891d9"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "49e89c81-499c-40b4-bf07-55c196a87cf1",
+      "payNo": "f1eda4a9-d0f5-4ab8-89f5-6d6702d1aa21",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "6d269b6a-efd7-4fff-8837-230e7c619782"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "673e2f10-b3c3-4d94-a155-8d839bfa3167",
+      "payNo": "e0b092f1-15d3-4f4b-9b3d-cfad1c8902d8",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "d44a77dd-a4b6-4c8d-a7cf-7e43477b3c07"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "326e2060-b83f-47cb-97d2-75f79a26cdb0",
+      "payNo": "96105ba6-3992-432b-a9cd-8e71bfa07c4a",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "0376c7ed-9ef4-4652-a03c-a4b3bc683c84"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "f0e1bb86-3263-4d76-ac38-c39a4d2d92a5",
+      "payNo": "36e8ec9f-70bb-4607-a676-7520593bf1bb",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "98131100-5a56-4d39-b8af-5ab76cf1e6ba"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "b37d7904-c7ce-4670-88b5-156a4280f9ae",
+      "payNo": "cadca580-3e12-4481-b4db-85e68b99d6bb",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "15689218-6e2a-4b60-9ea1-cec22dd60236"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "e99dd186-1407-4321-ba81-dc6db4caf068",
+      "payNo": "0e5df016-026c-463e-ba1d-df6284b62a94",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "3c807724-6116-4c53-8748-fc8df5de8214"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "b5c4d266-b516-4ca8-b260-89e43825f2dc",
+      "payNo": "928c249e-d2a1-4c87-9c14-ad182023882d",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "ef9678f3-e172-4511-9df6-e6318a907549"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "a4fc3e79-f34c-447d-bb58-40929d11f133",
+      "payNo": "b0293e94-1f5b-4a16-91f4-904556e4ebdc",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "e3812607-1329-4ad3-82e1-36627a69505a"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "cf3dd040-ed5f-4ce4-a8df-2a9425ea5e6c",
+      "payNo": "4ffa69d0-7903-4a50-b41b-febd2cd7f393",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "54d570b5-166f-4fa2-b595-c74ec56022ff"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "21e090e4-ea48-4e92-aad4-d1edf5191170",
+      "payNo": "48e339bc-ed85-43ee-af32-b47366fc9563",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "d09004ef-ba97-4f20-aa95-ceb2e977f395"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "64f6052c-2d43-4ebe-a219-58b56bb22648",
+      "payNo": "83bfb7d5-8231-4674-bce9-330ac50b4fb6",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "201186d4-ffaf-4994-bc9e-65178762b3dd"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "58319bd7-9fc2-4c48-b928-98af6499058b",
+      "payNo": "767bcb00-6c5f-468f-a199-9457134264e6",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "0b3c3c0a-1f6b-4459-a084-f0fe83f4c28c"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "0e14ee01-68c2-445b-bb76-30de5d51cfd2",
+      "payNo": "a9ab5635-7b9c-41d6-a168-e15bb1b42dea",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "9ce28637-dd7e-4121-8566-b205b66376a2"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "ef084116-2d84-4735-b607-f4dce551de03",
+      "payNo": "544b1eff-276a-4f03-842b-067d68c4329c",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "8aae2577-0877-4b4e-8a5c-545f8dc57520"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "1b487dc9-ddf1-455a-8bce-1fece24437d0",
+      "payNo": "4d38d74a-8d4d-4bf9-a7d8-2ab1ad687e37",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "1781ded7-874c-4d03-834b-9159377b746a"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "685e80b4-d3d3-4570-9b04-84268362d6cb",
+      "payNo": "4c8c7df1-807f-4bcd-8f6e-1b300b4d11a1",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "5c1527a3-f5dc-4dcd-a1a4-653ac1d9d136"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "0397226a-db4f-428d-8590-47804063115a",
+      "payNo": "c6d9c87c-f8c3-4b46-959d-af711c875d43",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "7bd00169-83bc-4e32-bab2-4433667b3227"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "ac14cc30-fb4c-4219-b018-40d2bbe8dc32",
+      "payNo": "a1b35566-47a7-45b5-9eb6-bcc1f7c90c76",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "7ace5395-0b44-4edf-8638-68cbce00eeec"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "5e54d2e4-afc1-47fd-8b12-887451f152f1",
+      "payNo": "bc532aec-9f1a-46fd-ab83-b9e0ffe93cc1",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "490cc794-3cee-46ff-807d-4c73e685224f"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "9fc2ce1c-1e38-44c8-b3b1-3a252ac2aa75",
+      "payNo": "47ba821b-79e8-46ac-a6f5-ee11ff61004b",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "d833afd5-e81f-493c-9c7a-6cefc0256fcc"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "4039c989-2a0d-4405-8499-12018592f7db",
+      "payNo": "125b65e2-5379-4520-aa9e-3ed228a028fe",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "98acb9e1-b043-47ae-9103-7bb0e7afda8d"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "d60ec7ca-d305-4ef3-b2fc-9fd9b2096331",
+      "payNo": "6d411df5-e8c2-45a7-8cc4-58ace72bae45",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "96f9b4d4-80c7-42a6-a62f-a07fdc00465b"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "02dc1a55-82c8-40be-817c-5edcd89f94df",
+      "payNo": "a15db324-8197-4e10-9ff3-b2bb713e6346",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "93e4b2fe-4f9b-449c-8e51-34fa6352ca8e"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "d1497682-69f9-46f4-91d2-49b21cdabae3",
+      "payNo": "c62260a5-8dad-4534-b0c0-045387344677",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "f51f2c38-57f8-4738-968a-864ad6920ae1"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "4ba3c8d7-f57b-4d9d-b759-0262cd7fdb9a",
+      "payNo": "fe4bef2d-7365-4690-ab5a-8625bc37422d",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "521c7f31-3d6b-4220-92b4-bd17c6d6c355"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "6219ccf7-48f1-4582-8aca-408576ca3c1e",
+      "payNo": "a94e270f-80ba-4e7a-9ddf-2898a412b1d4",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "0a535fbf-10f6-4bbb-810d-9e3ade195b04"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "0a40bf27-3e7e-4feb-8991-f22d310a4d3c",
+      "payNo": "b4b933c4-010d-4b37-a2dc-746a5c435571",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "5aeace45-2c28-4638-80cc-e6e7d58cced1"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "a3412183-b392-4574-9bed-69a96a3baae0",
+      "payNo": "0c843461-cfb2-47a9-92e1-3643bae851dd",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "b4243518-02ac-4f93-8f62-656ccfbb7bba"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "26833c6a-854e-49a4-9067-886cc7ed9144",
+      "payNo": "918f7c4f-c40d-4ffa-97a1-6140b522fa5b",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "c8bf5a0a-afd5-4a14-af53-e77774ecaf37"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "a0aaedcd-3d87-4737-8c8c-dd5007e1b86d",
+      "payNo": "b835b4aa-324c-47db-8be8-1478a947e422",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "c6870015-1d23-47de-9273-658300326b91"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "78607eb7-8898-49e8-b053-3339208a127b",
+      "payNo": "324c6854-4b9e-419e-8d85-e735ffffe309",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "2a08af6c-dce8-46e6-ae59-9f3eb7eef5f9"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "ab20f7ec-87fd-4f65-a211-4268e085ded9",
+      "payNo": "9fb7c1f0-6d7c-4c51-aaa1-e0ad9c817c9a",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "6406d843-e090-4cc0-b266-92ad6e2b1e69"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "d036f075-762c-48a0-a607-63b023206964",
+      "payNo": "3d7073f8-ad26-4c2e-8c1a-ccf9cbe09d97",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "0f6db3c4-a26c-4565-933e-dfb5788614b5"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "6813727a-9460-4563-8aa9-d3764096d1a3",
+      "payNo": "4e827060-9e4e-4cf2-b547-fb1639b375be",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "e189a04f-996f-4e24-8fd5-21374bb8a531"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "8e40f2da-b444-4741-939a-0566a5a92c6e",
+      "payNo": "983fb197-9c12-42e3-8d92-02607eaa2363",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "a7c19a59-0e00-4138-99a1-dc8191f82764"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "a8f3e643-8264-475d-a781-b54a3219cd1c",
+      "payNo": "0f0e5389-fc9c-4494-a9b9-e1ccc9895e93",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "7b20fda6-8e7c-4a83-8dae-120d40094d6d"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "30c6efc4-98d7-45e1-87cd-509d120ed977",
+      "payNo": "972204b3-6af0-4593-adde-a4ebe1fac5c3",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "70856a13-ff0d-4326-a1e9-c65e7a972363"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "10038792-c670-445d-b4c1-a9144dfc5f85",
+      "payNo": "9e3ae687-a6cf-4f2e-a051-f13e01d0672a",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "64d580d3-489d-4f6f-8ce9-764da3054735"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "89c2fadf-5d45-4fcb-9126-e653a3d1b18f",
+      "payNo": "5484846e-9e7d-4cfd-a440-de9993f10767",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "829fd3c3-00bf-431f-8abc-e37c506909e1"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "aaa3726e-0859-4d1e-80ec-5e8c3e3911ab",
+      "payNo": "a5c357b1-d744-4a3a-bbf6-f76985871df5",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "af2b63e2-d21e-4cb4-9367-45ce9e9232bd"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "05bb2987-2bc7-47c4-99fb-164197ddc1b9",
+      "payNo": "ec351652-e762-4999-8c15-961ceba12e8c",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "0697e980-97d8-4b99-a7c7-e58b218d4691"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "c593eb30-1161-456b-8940-877513cbc238",
+      "payNo": "ccd83ecd-ec45-4dab-acb3-1dc6d2dabd02",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "42d994df-1375-450f-92c5-93f9d327dc0f"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "3bda0afd-863c-4362-8f65-a171a3cd43fb",
+      "payNo": "a7886b91-77d1-4c9c-8d41-99cdeacc809f",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "e586e07a-05cb-4b36-bf95-5c467bac17a4"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "2fc284af-299a-49ff-b848-5c0c27fc0c4c",
+      "payNo": "02e2e9e0-3742-46aa-90c1-3fa12b1144e0",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "a19d877f-a571-48aa-969e-a38517919ab0"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "42257b79-b202-472c-bb2f-536f06092ebd",
+      "payNo": "25c9980e-2d4a-4871-b3c9-788e4717b3dd",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "3a5e5415-d38f-45fd-b740-cbf824c4ce71"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "ec7abf43-195f-4a32-972d-eea269a9cf3d",
+      "payNo": "0483b582-6605-48b5-a1d2-3045d800c718",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "eff0afd5-0f44-43c9-98bb-d094adb4149e"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "dbe896ad-b97f-47f2-9ac3-7774ee337c9b",
+      "payNo": "1745fc7a-9d5d-49af-a988-d223fd25544d",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "7c9a04da-1b2e-470e-933d-49f7cf090ed8"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "afdedae0-af39-4f50-8515-c7f767bfd0fa",
+      "payNo": "57322c4c-6bbc-4a01-89aa-e35fda5fc398",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "63171179-8ae1-4e92-b89a-8b5ea2e0fa6e"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "25b49536-b971-49b2-add9-53a1fe835f51",
+      "payNo": "a1971384-674f-45d8-bdf9-5aec088a69e3",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "dfe1ad89-6453-4686-aa74-0b610c497169"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "cfd16fb2-e32e-4dcd-9ada-7e0051c8efe5",
+      "payNo": "3ad13d29-fe26-49e9-8800-b8b445c47e8c",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "1dda732d-a124-44ff-88e0-46e62b4bf9c0"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "303fec10-b827-4d15-96c5-b25c41c7bae8",
+      "payNo": "19047b29-6521-4bcf-af6f-97ee87bdb6ce",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "40b43a14-db46-4d8d-add9-24bf2a153e5b"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "0bace745-5c0f-4ad3-b6b6-a27cca04a969",
+      "payNo": "3a9239da-fec6-431f-b5f0-369c082e7c9d",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "7b995886-4380-4d3f-b41e-d4457f49ab0b"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "9e30e576-16cd-468d-b938-0739348fadb1",
+      "payNo": "ab7f325a-597d-4e16-bb58-c95d3a2266fb",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "8dfff503-af52-462a-add4-0410754b1a96"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "b8bbad23-8332-4315-a7c2-5e881a1e2e95",
+      "payNo": "bbf4e8d0-a976-4350-8162-01e4de5b6b1a",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "5d2c024c-b47e-4475-9593-3374c6e94352"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "67adcfb5-7fad-43e9-90ad-88860ec0acf5",
+      "payNo": "0b33cc88-71c5-487d-a0d3-4af1db3d572a",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "7e5b2f59-36a6-4a5a-8d7e-ede7877d8ae5"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "c842c0a8-4e82-4858-a4f6-710d39f2227f",
+      "payNo": "077ae179-7f7d-45d4-90b2-13829df78800",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "6cc431e5-50ad-472f-aef9-65d7c82bef00"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "622ac171-96c0-476f-9226-4136d9056b00",
+      "payNo": "c1658407-5eb5-477e-a262-8c356beea520",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "81be0475-ec5a-4e39-8639-f5f85d181471"
+      ],
+      "matched": true
+    },
+    {
+      "orderNo": "5b8bd9d0-ddf5-493c-abc1-c734c58e6fa2",
+      "payNo": "5b0866d7-9fac-423a-b84d-5465ecec0b5c",
+      "capturedFen": 10000,
+      "refundSuccessFen": 9532,
+      "channelNetFen": 468,
+      "platformBillPayableFen": 468,
+      "refundCount": 1,
+      "refundNos": [
+        "6a447f52-8f3d-4b4e-a4d3-777556df310a"
+      ],
+      "matched": true
+    }
+  ],
+  "failures": [],
+  "scope": "Synthetic independent channel evidence, not real money or production capacity.",
+  "containerIsolation": {
+    "network": "none",
+    "rootFilesystem": "read-only",
+    "channelVolume": "read-only",
+    "capabilities": "ALL dropped",
+    "sourceVolumeOwnershipVerified": true
+  }
+}

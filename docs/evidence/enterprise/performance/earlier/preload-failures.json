@@ -1,0 +1,85 @@
+{
+  "scope": "Four genuine fixture/resource failures before any offered business load; these are not query/create SLO failures.",
+  "attempts": [
+    {
+      "runId": "44dfff832bf1",
+      "candidate": {
+        "imageId": "sha256:697aa3a32bb3d11f907a68e97acf2e7cb97cf026ed899de5f0784197e0319522",
+        "repoDigests": [],
+        "revision": "302507165a4496ded25ac6ff0505a93869bec47c"
+      },
+      "sha": "302507165a4496ded25ac6ff0505a93869bec47c",
+      "result": "FAIL",
+      "cause": "Compose parsed an unquoted ISO business time as a timestamp object; validation rejected it.",
+      "businessLoadStarted": false,
+      "historicalRowsSeeded": 0,
+      "rawLoadSamples": 0,
+      "sloEvaluated": false,
+      "allProjectContainersDown": true,
+      "beganAt": "2026-10-19T11:04:49.805040+00:00",
+      "endedAt": "2026-10-19T11:04:49.941214+00:00",
+      "publicEvidence": "earlier/preload-failures.json"
+    },
+    {
+      "runId": "0f9fcbdbdcb1",
+      "candidate": {
+        "imageId": "sha256:697aa3a32bb3d11f907a68e97acf2e7cb97cf026ed899de5f0784197e0319522",
+        "repoDigests": [],
+        "revision": "302507165a4496ded25ac6ff0505a93869bec47c"
+      },
+      "sha": "302507165a4496ded25ac6ff0505a93869bec47c",
+      "result": "FAIL",
+      "cause": "Inline tmpfs options were split into three YAML sequence items; Docker rejected the non-absolute nosuid mount.",
+      "businessLoadStarted": false,
+      "historicalRowsSeeded": 0,
+      "rawLoadSamples": 0,
+      "sloEvaluated": false,
+      "allProjectContainersDown": true,
+      "beganAt": "2026-10-19T11:05:19.835213+00:00",
+      "endedAt": "2026-10-19T11:05:42.329979+00:00",
+      "publicEvidence": "earlier/preload-failures.json"
+    },
+    {
+      "runId": "6d08246a1d17",
+      "candidate": {
+        "imageId": "sha256:697aa3a32bb3d11f907a68e97acf2e7cb97cf026ed899de5f0784197e0319522",
+        "repoDigests": [],
+        "revision": "302507165a4496ded25ac6ff0505a93869bec47c"
+      },
+      "sha": "302507165a4496ded25ac6ff0505a93869bec47c",
+      "result": "FAIL",
+      "cause": "Topology creation failed; ENOSPC also interrupted the private diagnostic write, so the original daemon error was not retained.",
+      "businessLoadStarted": false,
+      "historicalRowsSeeded": 0,
+      "rawLoadSamples": 0,
+      "sloEvaluated": false,
+      "allProjectContainersDown": true,
+      "beganAt": "2026-10-19T11:06:18.454872+00:00",
+      "endedAt": "2026-10-19T11:06:34.588496+00:00",
+      "publicEvidence": "earlier/preload-failures.json"
+    },
+    {
+      "runId": "ba3307216dfa",
+      "candidate": {
+        "imageId": "sha256:52bdaff20c1a57f6c0e518c5592779d64a31b202cf80d8a9ff36932dddc082a2",
+        "repoDigests": [],
+        "revision": "a212a8b4ffb91444c1170478995786c1f2780d02"
+      },
+      "sha": "a212a8b4ffb91444c1170478995786c1f2780d02",
+      "result": "FAIL",
+      "cause": "Docker VFS rootfs copies exhausted available space while creating the worker alongside the isolated A46 stack.",
+      "businessLoadStarted": false,
+      "historicalRowsSeeded": 0,
+      "rawLoadSamples": 0,
+      "sloEvaluated": false,
+      "allProjectContainersDown": true,
+      "beganAt": "2026-10-19T11:10:02.409910+00:00",
+      "endedAt": "2026-10-19T11:10:35.158164+00:00",
+      "publicEvidence": "earlier/preload-failures.json"
+    }
+  ],
+  "notes": [
+    "The first three empty failed-project volumes were removed only after explicit maintenance authorization and label/attachment checks.",
+    "Reports, environment files and logs remain private and preserved. The fourth failed project volume set is retained."
+  ]
+}

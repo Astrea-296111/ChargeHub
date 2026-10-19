@@ -1,0 +1,9 @@
+{
+  "users": 100,
+  "connectors": 100,
+  "historicalOrders": 1000000,
+  "reusedHistoricalRows": true,
+  "elapsedSeconds": 3.642457272988395,
+  "synthetic": true,
+  "historicalStatus": "CANCELED/CLOSED; no invented cash or charging sessions"
+}

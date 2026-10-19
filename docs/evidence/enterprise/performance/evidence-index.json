@@ -1,0 +1,803 @@
+{
+  "updatedAt": "2026-10-19T17:35:24.584184+00:00",
+  "state": "PASS",
+  "scope": "Public sanitized index of every retained attempt. Relative artifact paths resolve inside this directory. No credentials, private logs, database dumps, or full Docker inspect are included.",
+  "preloadFailures": {
+    "scope": "Four genuine fixture/resource failures before any offered business load; these are not query/create SLO failures.",
+    "attempts": [
+      {
+        "runId": "44dfff832bf1",
+        "candidate": {
+          "imageId": "sha256:697aa3a32bb3d11f907a68e97acf2e7cb97cf026ed899de5f0784197e0319522",
+          "repoDigests": [],
+          "revision": "302507165a4496ded25ac6ff0505a93869bec47c"
+        },
+        "sha": "302507165a4496ded25ac6ff0505a93869bec47c",
+        "result": "FAIL",
+        "cause": "Compose parsed an unquoted ISO business time as a timestamp object; validation rejected it.",
+        "businessLoadStarted": false,
+        "historicalRowsSeeded": 0,
+        "rawLoadSamples": 0,
+        "sloEvaluated": false,
+        "allProjectContainersDown": true,
+        "beganAt": "2026-10-19T11:04:49.805040+00:00",
+        "endedAt": "2026-10-19T11:04:49.941214+00:00",
+        "publicEvidence": "earlier/preload-failures.json"
+      },
+      {
+        "runId": "0f9fcbdbdcb1",
+        "candidate": {
+          "imageId": "sha256:697aa3a32bb3d11f907a68e97acf2e7cb97cf026ed899de5f0784197e0319522",
+          "repoDigests": [],
+          "revision": "302507165a4496ded25ac6ff0505a93869bec47c"
+        },
+        "sha": "302507165a4496ded25ac6ff0505a93869bec47c",
+        "result": "FAIL",
+        "cause": "Inline tmpfs options were split into three YAML sequence items; Docker rejected the non-absolute nosuid mount.",
+        "businessLoadStarted": false,
+        "historicalRowsSeeded": 0,
+        "rawLoadSamples": 0,
+        "sloEvaluated": false,
+        "allProjectContainersDown": true,
+        "beganAt": "2026-10-19T11:05:19.835213+00:00",
+        "endedAt": "2026-10-19T11:05:42.329979+00:00",
+        "publicEvidence": "earlier/preload-failures.json"
+      },
+      {
+        "runId": "6d08246a1d17",
+        "candidate": {
+          "imageId": "sha256:697aa3a32bb3d11f907a68e97acf2e7cb97cf026ed899de5f0784197e0319522",
+          "repoDigests": [],
+          "revision": "302507165a4496ded25ac6ff0505a93869bec47c"
+        },
+        "sha": "302507165a4496ded25ac6ff0505a93869bec47c",
+        "result": "FAIL",
+        "cause": "Topology creation failed; ENOSPC also interrupted the private diagnostic write, so the original daemon error was not retained.",
+        "businessLoadStarted": false,
+        "historicalRowsSeeded": 0,
+        "rawLoadSamples": 0,
+        "sloEvaluated": false,
+        "allProjectContainersDown": true,
+        "beganAt": "2026-10-19T11:06:18.454872+00:00",
+        "endedAt": "2026-10-19T11:06:34.588496+00:00",
+        "publicEvidence": "earlier/preload-failures.json"
+      },
+      {
+        "runId": "ba3307216dfa",
+        "candidate": {
+          "imageId": "sha256:52bdaff20c1a57f6c0e518c5592779d64a31b202cf80d8a9ff36932dddc082a2",
+          "repoDigests": [],
+          "revision": "a212a8b4ffb91444c1170478995786c1f2780d02"
+        },
+        "sha": "a212a8b4ffb91444c1170478995786c1f2780d02",
+        "result": "FAIL",
+        "cause": "Docker VFS rootfs copies exhausted available space while creating the worker alongside the isolated A46 stack.",
+        "businessLoadStarted": false,
+        "historicalRowsSeeded": 0,
+        "rawLoadSamples": 0,
+        "sloEvaluated": false,
+        "allProjectContainersDown": true,
+        "beganAt": "2026-10-19T11:10:02.409910+00:00",
+        "endedAt": "2026-10-19T11:10:35.158164+00:00",
+        "publicEvidence": "earlier/preload-failures.json"
+      }
+    ],
+    "notes": [
+      "The first three empty failed-project volumes were removed only after explicit maintenance authorization and label/attachment checks.",
+      "Reports, environment files and logs remain private and preserved. The fourth failed project volume set is retained."
+    ]
+  },
+  "attempts": [
+    {
+      "runId": "dab3d087b7cf",
+      "phase": "smoke",
+      "result": "FAIL",
+      "beganAt": "2026-10-19T16:07:43.125362+00:00",
+      "endedAt": "2026-10-19T16:09:13.455792+00:00",
+      "sha": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+      "harnessGitHead": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+      "harnessFileSha256": {
+        "scripts/performance/run.py": "4f27411406fae589caf6ee54737d0b057cc617313619c62c5952d6baf96ac11a",
+        "scripts/performance/load.py": "e88b27c654b64f69a2d219e06700df13f76da8b9f47d8c657f8821c5c9d6dc77",
+        "scripts/performance/compose.yaml": "72d8038a8108c0c55f1bb2e2f2c96b2bc99025f128ae5f6f2ebbcae32c3c07fd",
+        "scripts/performance/compose-mq-limits.yaml": "03562b2dfc4021425345afe86553dae433967e7c5bbdc80d9326d977b8999628",
+        "compose-mq.yaml": "b84c3b6de01b448e671b8692a674b8a5993390670799c6730d16bc9940595c71",
+        "deploy/rocketmq/broker.conf": "f5370a2fb79ce3748a05b2294718a3c06cd44833da3df55b5fb4fd90ba9ca052",
+        "deploy/rocketmq/proxy.json": "13ad47be5112597bbfe352c1d5ff38b798440a3186cc42b37ba87471cacd6ffb"
+      },
+      "directory": "attempts/smoke-168b53d737",
+      "candidateImageId": "sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714",
+      "diagnostic": "Pre-load failure: NameServer health spawned a second JVM under the 256MiB limit; measured OOM. Fixed only the isolated probe to actual TCP readiness; broker retains cluster verification.",
+      "loadPhases": [],
+      "safeArtifacts": [
+        "attempts/smoke-168b53d737/run-metadata.json"
+      ]
+    },
+    {
+      "runId": "dab3d087b7cf",
+      "phase": "smoke",
+      "result": "FAIL",
+      "beganAt": "2026-10-19T16:11:14.518252+00:00",
+      "endedAt": "2026-10-19T16:14:10.534567+00:00",
+      "sha": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+      "harnessGitHead": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+      "harnessFileSha256": {
+        "scripts/performance/run.py": "4f27411406fae589caf6ee54737d0b057cc617313619c62c5952d6baf96ac11a",
+        "scripts/performance/load.py": "e88b27c654b64f69a2d219e06700df13f76da8b9f47d8c657f8821c5c9d6dc77",
+        "scripts/performance/compose.yaml": "72d8038a8108c0c55f1bb2e2f2c96b2bc99025f128ae5f6f2ebbcae32c3c07fd",
+        "scripts/performance/compose-mq-limits.yaml": "bf6d33f3def2b70feb8fc77d748d0602cbd16412ff66bc0df2c9837fa2993980",
+        "compose-mq.yaml": "b84c3b6de01b448e671b8692a674b8a5993390670799c6730d16bc9940595c71",
+        "deploy/rocketmq/broker.conf": "f5370a2fb79ce3748a05b2294718a3c06cd44833da3df55b5fb4fd90ba9ca052",
+        "deploy/rocketmq/proxy.json": "13ad47be5112597bbfe352c1d5ff38b798440a3186cc42b37ba87471cacd6ffb"
+      },
+      "directory": "attempts/smoke-ebca5ff0d3",
+      "candidateImageId": "sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714",
+      "diagnostic": "Pre-load seed failure: MySQL ERROR1137 forbids repeatedly referencing one TEMPORARY digit table. Replaced with a reusable CTE and verified a 1000000-row cross product.",
+      "loadPhases": [],
+      "safeArtifacts": [
+        "attempts/smoke-ebca5ff0d3/run-metadata.json"
+      ]
+    },
+    {
+      "runId": "dab3d087b7cf",
+      "phase": "smoke",
+      "result": "FAIL",
+      "beganAt": "2026-10-19T16:15:56.063394+00:00",
+      "endedAt": "2026-10-19T16:17:41.763672+00:00",
+      "sha": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+      "harnessGitHead": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+      "harnessFileSha256": {
+        "scripts/performance/run.py": "a6d98e8d7bd0ddc4300e479fa3a771c43c160550e7f8362194bf18b143f03795",
+        "scripts/performance/load.py": "e88b27c654b64f69a2d219e06700df13f76da8b9f47d8c657f8821c5c9d6dc77",
+        "scripts/performance/compose.yaml": "72d8038a8108c0c55f1bb2e2f2c96b2bc99025f128ae5f6f2ebbcae32c3c07fd",
+        "scripts/performance/compose-mq-limits.yaml": "bf6d33f3def2b70feb8fc77d748d0602cbd16412ff66bc0df2c9837fa2993980",
+        "compose-mq.yaml": "b84c3b6de01b448e671b8692a674b8a5993390670799c6730d16bc9940595c71",
+        "deploy/rocketmq/broker.conf": "f5370a2fb79ce3748a05b2294718a3c06cd44833da3df55b5fb4fd90ba9ca052",
+        "deploy/rocketmq/proxy.json": "13ad47be5112597bbfe352c1d5ff38b798440a3186cc42b37ba87471cacd6ffb"
+      },
+      "directory": "attempts/smoke-fb19a5894c",
+      "candidateImageId": "sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714",
+      "diagnostic": "1000000 history rows inserted successfully in 45.15s; no business load sent because the capability-free root loadgen could not read private host mounts. Fixed by using the invoking UID/GID.",
+      "seed": {
+        "users": 100,
+        "connectors": 100,
+        "historicalOrders": 1000000,
+        "reusedHistoricalRows": false,
+        "elapsedSeconds": 45.15313360100845,
+        "synthetic": true,
+        "historicalStatus": "CANCELED/CLOSED; no invented cash or charging sessions"
+      },
+      "loadPhases": [],
+      "safeArtifacts": [
+        "attempts/smoke-fb19a5894c/run-metadata.json",
+        "attempts/smoke-fb19a5894c/seed-summary.json",
+        "attempts/smoke-fb19a5894c/containers-before.json",
+        "attempts/smoke-fb19a5894c/docker-stats-before.jsonl"
+      ]
+    },
+    {
+      "runId": "dab3d087b7cf",
+      "phase": "smoke",
+      "result": "PASS",
+      "beganAt": "2026-10-19T16:18:12.649066+00:00",
+      "endedAt": "2026-10-19T16:20:03.645512+00:00",
+      "sha": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+      "harnessGitHead": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+      "harnessFileSha256": {
+        "scripts/performance/run.py": "25aa19b89e19c29d55339cc5c254329582f79398a5008018e0e1f9376e8f1178",
+        "scripts/performance/load.py": "e88b27c654b64f69a2d219e06700df13f76da8b9f47d8c657f8821c5c9d6dc77",
+        "scripts/performance/compose.yaml": "80bcef7a1ec5a050f225f9accae44f3f3be1aa0261f82348e10be0942d7a15af",
+        "scripts/performance/compose-mq-limits.yaml": "bf6d33f3def2b70feb8fc77d748d0602cbd16412ff66bc0df2c9837fa2993980",
+        "compose-mq.yaml": "b84c3b6de01b448e671b8692a674b8a5993390670799c6730d16bc9940595c71",
+        "deploy/rocketmq/broker.conf": "f5370a2fb79ce3748a05b2294718a3c06cd44833da3df55b5fb4fd90ba9ca052",
+        "deploy/rocketmq/proxy.json": "13ad47be5112597bbfe352c1d5ff38b798440a3186cc42b37ba87471cacd6ffb"
+      },
+      "directory": "attempts/smoke-188419da2b",
+      "candidateImageId": "sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714",
+      "diagnostic": "Original scheduler short smoke PASS; successful seed reuse and post-load invariants.",
+      "seed": {
+        "users": 100,
+        "connectors": 100,
+        "historicalOrders": 1000000,
+        "reusedHistoricalRows": true,
+        "elapsedSeconds": 3.642457272988395,
+        "synthetic": true,
+        "historicalStatus": "CANCELED/CLOSED; no invented cash or charging sessions"
+      },
+      "loadPhases": [
+        {
+          "mode": "mixed",
+          "status": "PASS",
+          "parameters": {
+            "mode": "mixed",
+            "duration": 10.0,
+            "rate": 50,
+            "users": 100,
+            "workers": 64,
+            "seed": 20261018
+          },
+          "loadElapsedSeconds": 10.001669027013122,
+          "scheduledArrivals": 500,
+          "observedArrivalRows": 500,
+          "sentArrivals": 500,
+          "classifications": {
+            "success": 496,
+            "business_rejection": 4
+          },
+          "allPhasesClassifications": {
+            "success": 621,
+            "business_rejection": 4
+          },
+          "byPhase": {
+            "cleanup": {
+              "success": 25
+            },
+            "load": {
+              "success": 496,
+              "business_rejection": 4
+            },
+            "setup": {
+              "success": 100
+            }
+          },
+          "totalRawRows": 625,
+          "slo": {
+            "querySuccessfulP95Ms": 112.13703000976238,
+            "queryLimitMs": 300,
+            "createSuccessfulP95Ms": 369.87843399401754,
+            "createLimitMs": 500,
+            "querySamples": 367,
+            "createSamples": 32,
+            "result": "PASS"
+          },
+          "latencyMs": {
+            "P50": 13.87265999801457,
+            "P95": 112.76213399833068,
+            "P99": 266.1545980081428
+          },
+          "arrivalLatencyMs": null,
+          "lateArrivalCount": null,
+          "lateOverIntervalCount": null,
+          "maxLagMs": null,
+          "queueMsP95": 1.2967510119779035,
+          "completedSessionCount": 0,
+          "failure": null,
+          "summary": "attempts/smoke-188419da2b/mixed-summary.json",
+          "rawRequests": "attempts/smoke-188419da2b/mixed-requests.jsonl.gz"
+        }
+      ],
+      "safeArtifacts": [
+        "attempts/smoke-188419da2b/run-metadata.json",
+        "attempts/smoke-188419da2b/seed-summary.json",
+        "attempts/smoke-188419da2b/containers-before.json",
+        "attempts/smoke-188419da2b/containers-after.json",
+        "attempts/smoke-188419da2b/docker-stats-before.jsonl",
+        "attempts/smoke-188419da2b/docker-stats-after.jsonl",
+        "attempts/smoke-188419da2b/invariants.tsv",
+        "attempts/smoke-188419da2b/mixed-summary.json",
+        "attempts/smoke-188419da2b/mixed-requests.jsonl.gz"
+      ]
+    },
+    {
+      "runId": "dab3d087b7cf",
+      "phase": "all",
+      "result": "FAIL",
+      "beganAt": "2026-10-19T16:20:16.750544+00:00",
+      "endedAt": "2026-10-19T16:36:53.439773+00:00",
+      "sha": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+      "harnessGitHead": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+      "harnessFileSha256": {
+        "scripts/performance/run.py": "25aa19b89e19c29d55339cc5c254329582f79398a5008018e0e1f9376e8f1178",
+        "scripts/performance/load.py": "e88b27c654b64f69a2d219e06700df13f76da8b9f47d8c657f8821c5c9d6dc77",
+        "scripts/performance/compose.yaml": "80bcef7a1ec5a050f225f9accae44f3f3be1aa0261f82348e10be0942d7a15af",
+        "scripts/performance/compose-mq-limits.yaml": "bf6d33f3def2b70feb8fc77d748d0602cbd16412ff66bc0df2c9837fa2993980",
+        "compose-mq.yaml": "b84c3b6de01b448e671b8692a674b8a5993390670799c6730d16bc9940595c71",
+        "deploy/rocketmq/broker.conf": "f5370a2fb79ce3748a05b2294718a3c06cd44833da3df55b5fb4fd90ba9ca052",
+        "deploy/rocketmq/proxy.json": "13ad47be5112597bbfe352c1d5ff38b798440a3186cc42b37ba87471cacd6ffb"
+      },
+      "directory": "attempts/all-7b52da375f",
+      "candidateImageId": "sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714",
+      "diagnostic": "Original scheduler full 900-second run FAIL: 22 arrivals discarded solely on scheduler_lag; the short-circuit branch did not check capacity. Preserved unchanged, with original load.py source and hash. Sessions were not run in this failed attempt.",
+      "seed": {
+        "users": 100,
+        "connectors": 100,
+        "historicalOrders": 1000000,
+        "reusedHistoricalRows": true,
+        "elapsedSeconds": 3.5626718700077618,
+        "synthetic": true,
+        "historicalStatus": "CANCELED/CLOSED; no invented cash or charging sessions"
+      },
+      "loadPhases": [
+        {
+          "mode": "mixed",
+          "status": "FAIL",
+          "parameters": {
+            "mode": "mixed",
+            "duration": 900.0,
+            "rate": 50,
+            "users": 100,
+            "workers": 64,
+            "seed": 20261018
+          },
+          "loadElapsedSeconds": 900.0642375780008,
+          "scheduledArrivals": 45000,
+          "observedArrivalRows": 45000,
+          "sentArrivals": 44978,
+          "classifications": {
+            "success": 42531,
+            "business_rejection": 2447,
+            "client_unsent": 22
+          },
+          "allPhasesClassifications": {
+            "success": 42687,
+            "business_rejection": 2447,
+            "client_unsent": 22
+          },
+          "byPhase": {
+            "cleanup": {
+              "success": 56
+            },
+            "load": {
+              "success": 42531,
+              "business_rejection": 2447,
+              "client_unsent": 22
+            },
+            "setup": {
+              "success": 100
+            }
+          },
+          "totalRawRows": 45156,
+          "slo": {
+            "querySuccessfulP95Ms": 49.30871300166473,
+            "queryLimitMs": 300,
+            "createSuccessfulP95Ms": 66.58957900071982,
+            "createLimitMs": 500,
+            "querySamples": 32699,
+            "createSamples": 1473,
+            "result": "PASS"
+          },
+          "latencyMs": {
+            "P50": 4.604614005074836,
+            "P95": 44.407949011656456,
+            "P99": 125.925525004277
+          },
+          "arrivalLatencyMs": null,
+          "lateArrivalCount": null,
+          "lateOverIntervalCount": null,
+          "maxLagMs": null,
+          "queueMsP95": 1.1032899928977713,
+          "completedSessionCount": 0,
+          "failure": null,
+          "summary": "attempts/all-7b52da375f/mixed-summary.json",
+          "rawRequests": "attempts/all-7b52da375f/mixed-requests.jsonl.gz"
+        }
+      ],
+      "safeArtifacts": [
+        "attempts/all-7b52da375f/run-metadata.json",
+        "attempts/all-7b52da375f/seed-summary.json",
+        "attempts/all-7b52da375f/containers-before.json",
+        "attempts/all-7b52da375f/docker-stats-before.jsonl",
+        "attempts/all-7b52da375f/mixed-summary.json",
+        "attempts/all-7b52da375f/mixed-requests.jsonl.gz"
+      ]
+    },
+    {
+      "runId": "dab3d087b7cf",
+      "phase": "smoke",
+      "result": "FAIL",
+      "beganAt": "2026-10-19T16:38:17.898350+00:00",
+      "endedAt": "2026-10-19T16:42:12.072775+00:00",
+      "sha": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+      "harnessGitHead": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+      "harnessFileSha256": {
+        "scripts/performance/run.py": "25aa19b89e19c29d55339cc5c254329582f79398a5008018e0e1f9376e8f1178",
+        "scripts/performance/load.py": "7cf1ecdf95fc0c9da83a59fd7e8a548f1ea3862c4e9ee19a58f0774747ea9c8e",
+        "scripts/performance/compose.yaml": "80bcef7a1ec5a050f225f9accae44f3f3be1aa0261f82348e10be0942d7a15af",
+        "scripts/performance/compose-mq-limits.yaml": "bf6d33f3def2b70feb8fc77d748d0602cbd16412ff66bc0df2c9837fa2993980",
+        "compose-mq.yaml": "b84c3b6de01b448e671b8692a674b8a5993390670799c6730d16bc9940595c71",
+        "deploy/rocketmq/broker.conf": "f5370a2fb79ce3748a05b2294718a3c06cd44833da3df55b5fb4fd90ba9ca052",
+        "deploy/rocketmq/proxy.json": "13ad47be5112597bbfe352c1d5ff38b798440a3186cc42b37ba87471cacd6ffb"
+      },
+      "directory": "attempts/smoke-c8ee417ce1",
+      "candidateImageId": "sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714",
+      "diagnostic": "Corrected scheduler cold-start smoke FAIL against unchanged candidate: initial station responses exceeded arrival SLO. All 500 arrivals sent, no technical errors or client drops; 29 station responses over300ms all in first2.2s.",
+      "seed": {
+        "users": 100,
+        "connectors": 100,
+        "historicalOrders": 1000000,
+        "reusedHistoricalRows": true,
+        "elapsedSeconds": 4.767459032998886,
+        "synthetic": true,
+        "historicalStatus": "CANCELED/CLOSED; no invented cash or charging sessions"
+      },
+      "loadPhases": [
+        {
+          "mode": "mixed",
+          "status": "FAIL",
+          "parameters": {
+            "mode": "mixed",
+            "duration": 10.0,
+            "rate": 50,
+            "users": 100,
+            "workers": 64,
+            "seed": 20261018
+          },
+          "loadElapsedSeconds": 10.005763014007243,
+          "scheduledArrivals": 500,
+          "observedArrivalRows": 500,
+          "sentArrivals": 500,
+          "classifications": {
+            "success": 485,
+            "business_rejection": 15
+          },
+          "allPhasesClassifications": {
+            "success": 610,
+            "business_rejection": 15
+          },
+          "byPhase": {
+            "cleanup": {
+              "success": 25
+            },
+            "load": {
+              "success": 485,
+              "business_rejection": 15
+            },
+            "setup": {
+              "success": 100
+            }
+          },
+          "totalRawRows": 625,
+          "slo": {
+            "basis": "scheduled arrival to completed response, including client queueMs",
+            "querySuccessfulP95Ms": 1195.0303110061213,
+            "queryLimitMs": 300,
+            "createSuccessfulP95Ms": 549.2595490068197,
+            "createLimitMs": 500,
+            "querySamples": 367,
+            "createSamples": 32,
+            "result": "FAIL"
+          },
+          "latencyMs": {
+            "P50": 31.91175899701193,
+            "P95": 877.1783700067317,
+            "P99": 2295.0208149995888
+          },
+          "arrivalLatencyMs": {
+            "P50": 32.3151819902705,
+            "P95": 877.347006011405,
+            "P99": 2295.2823849918786
+          },
+          "lateArrivalCount": 500,
+          "lateOverIntervalCount": 0,
+          "maxLagMs": 14.13754399982281,
+          "queueMsP95": 1.9369509973330423,
+          "completedSessionCount": 0,
+          "failure": null,
+          "summary": "attempts/smoke-c8ee417ce1/mixed-summary.json",
+          "rawRequests": "attempts/smoke-c8ee417ce1/mixed-requests.jsonl.gz"
+        }
+      ],
+      "safeArtifacts": [
+        "attempts/smoke-c8ee417ce1/run-metadata.json",
+        "attempts/smoke-c8ee417ce1/seed-summary.json",
+        "attempts/smoke-c8ee417ce1/cold-start-distribution.json",
+        "attempts/smoke-c8ee417ce1/containers-before.json",
+        "attempts/smoke-c8ee417ce1/docker-stats-before.jsonl",
+        "attempts/smoke-c8ee417ce1/mixed-summary.json",
+        "attempts/smoke-c8ee417ce1/mixed-requests.jsonl.gz"
+      ]
+    },
+    {
+      "runId": "dab3d087b7cf",
+      "phase": "smoke",
+      "result": "PASS",
+      "beganAt": "2026-10-19T16:43:07.246395+00:00",
+      "endedAt": "2026-10-19T16:44:55.433143+00:00",
+      "sha": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+      "harnessGitHead": "aaa2c265037249044c174abe3f5fc4f997b2d0e6",
+      "harnessFileSha256": {
+        "scripts/performance/run.py": "25aa19b89e19c29d55339cc5c254329582f79398a5008018e0e1f9376e8f1178",
+        "scripts/performance/load.py": "7cf1ecdf95fc0c9da83a59fd7e8a548f1ea3862c4e9ee19a58f0774747ea9c8e",
+        "scripts/performance/compose.yaml": "80bcef7a1ec5a050f225f9accae44f3f3be1aa0261f82348e10be0942d7a15af",
+        "scripts/performance/compose-mq-limits.yaml": "bf6d33f3def2b70feb8fc77d748d0602cbd16412ff66bc0df2c9837fa2993980",
+        "compose-mq.yaml": "b84c3b6de01b448e671b8692a674b8a5993390670799c6730d16bc9940595c71",
+        "deploy/rocketmq/broker.conf": "f5370a2fb79ce3748a05b2294718a3c06cd44833da3df55b5fb4fd90ba9ca052",
+        "deploy/rocketmq/proxy.json": "13ad47be5112597bbfe352c1d5ff38b798440a3186cc42b37ba87471cacd6ffb"
+      },
+      "directory": "attempts/smoke-a49853fb2c",
+      "candidateImageId": "sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714",
+      "diagnostic": "Corrected scheduler warm-stack smoke PASS: all500 sent, successful query/create arrival P95 69.95/172.27ms; no threshold changes or samples removed.",
+      "seed": {
+        "users": 100,
+        "connectors": 100,
+        "historicalOrders": 1000000,
+        "reusedHistoricalRows": true,
+        "elapsedSeconds": 3.4848450319987023,
+        "synthetic": true,
+        "historicalStatus": "CANCELED/CLOSED; no invented cash or charging sessions"
+      },
+      "loadPhases": [
+        {
+          "mode": "mixed",
+          "status": "PASS",
+          "parameters": {
+            "mode": "mixed",
+            "duration": 10.0,
+            "rate": 50,
+            "users": 100,
+            "workers": 64,
+            "seed": 20261018
+          },
+          "loadElapsedSeconds": 10.001349035999738,
+          "scheduledArrivals": 500,
+          "observedArrivalRows": 500,
+          "sentArrivals": 500,
+          "classifications": {
+            "success": 485,
+            "business_rejection": 15
+          },
+          "allPhasesClassifications": {
+            "success": 610,
+            "business_rejection": 15
+          },
+          "byPhase": {
+            "cleanup": {
+              "success": 25
+            },
+            "load": {
+              "success": 485,
+              "business_rejection": 15
+            },
+            "setup": {
+              "success": 100
+            }
+          },
+          "totalRawRows": 625,
+          "slo": {
+            "basis": "scheduled arrival to completed response, including client queueMs",
+            "querySuccessfulP95Ms": 69.94655101152603,
+            "queryLimitMs": 300,
+            "createSuccessfulP95Ms": 172.27056300907861,
+            "createLimitMs": 500,
+            "querySamples": 367,
+            "createSamples": 32,
+            "result": "PASS"
+          },
+          "latencyMs": {
+            "P50": 7.691462989896536,
+            "P95": 69.20363300014287,
+            "P99": 174.20391499763355
+          },
+          "arrivalLatencyMs": {
+            "P50": 8.269341997220181,
+            "P95": 69.41987700702157,
+            "P99": 174.35134800325613
+          },
+          "lateArrivalCount": 500,
+          "lateOverIntervalCount": 0,
+          "maxLagMs": 7.327244005864486,
+          "queueMsP95": 1.8791060138028115,
+          "completedSessionCount": 0,
+          "failure": null,
+          "summary": "attempts/smoke-a49853fb2c/mixed-summary.json",
+          "rawRequests": "attempts/smoke-a49853fb2c/mixed-requests.jsonl.gz"
+        }
+      ],
+      "safeArtifacts": [
+        "attempts/smoke-a49853fb2c/run-metadata.json",
+        "attempts/smoke-a49853fb2c/seed-summary.json",
+        "attempts/smoke-a49853fb2c/containers-before.json",
+        "attempts/smoke-a49853fb2c/containers-after.json",
+        "attempts/smoke-a49853fb2c/docker-stats-before.jsonl",
+        "attempts/smoke-a49853fb2c/docker-stats-after.jsonl",
+        "attempts/smoke-a49853fb2c/invariants.tsv",
+        "attempts/smoke-a49853fb2c/mixed-summary.json",
+        "attempts/smoke-a49853fb2c/mixed-requests.jsonl.gz"
+      ]
+    },
+    {
+      "runId": "dab3d087b7cf",
+      "phase": "all",
+      "result": "PASS",
+      "beganAt": "2026-10-19T16:45:23.274824+00:00",
+      "endedAt": "2026-10-19T17:33:32.606328+00:00",
+      "sha": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+      "harnessGitHead": "aaa2c265037249044c174abe3f5fc4f997b2d0e6",
+      "harnessFileSha256": {
+        "scripts/performance/run.py": "25aa19b89e19c29d55339cc5c254329582f79398a5008018e0e1f9376e8f1178",
+        "scripts/performance/load.py": "7cf1ecdf95fc0c9da83a59fd7e8a548f1ea3862c4e9ee19a58f0774747ea9c8e",
+        "scripts/performance/compose.yaml": "80bcef7a1ec5a050f225f9accae44f3f3be1aa0261f82348e10be0942d7a15af",
+        "scripts/performance/compose-mq-limits.yaml": "bf6d33f3def2b70feb8fc77d748d0602cbd16412ff66bc0df2c9837fa2993980",
+        "compose-mq.yaml": "b84c3b6de01b448e671b8692a674b8a5993390670799c6730d16bc9940595c71",
+        "deploy/rocketmq/broker.conf": "f5370a2fb79ce3748a05b2294718a3c06cd44833da3df55b5fb4fd90ba9ca052",
+        "deploy/rocketmq/proxy.json": "13ad47be5112597bbfe352c1d5ff38b798440a3186cc42b37ba87471cacd6ffb"
+      },
+      "directory": "current",
+      "candidateImageId": "sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714",
+      "diagnostic": "Final corrected-generator all900+1800-second measurement; state follows the actual runner.",
+      "seed": {
+        "users": 100,
+        "connectors": 100,
+        "historicalOrders": 1000000,
+        "reusedHistoricalRows": true,
+        "elapsedSeconds": 3.3430741310003214,
+        "synthetic": true,
+        "historicalStatus": "CANCELED/CLOSED; no invented cash or charging sessions"
+      },
+      "loadPhases": [
+        {
+          "mode": "mixed",
+          "status": "PASS",
+          "parameters": {
+            "mode": "mixed",
+            "duration": 900.0,
+            "rate": 50,
+            "users": 100,
+            "workers": 64,
+            "seed": 20261018
+          },
+          "loadElapsedSeconds": 900.0574622929998,
+          "scheduledArrivals": 45000,
+          "observedArrivalRows": 45000,
+          "sentArrivals": 45000,
+          "classifications": {
+            "success": 42461,
+            "business_rejection": 2539
+          },
+          "allPhasesClassifications": {
+            "success": 42617,
+            "business_rejection": 2539
+          },
+          "byPhase": {
+            "cleanup": {
+              "success": 56
+            },
+            "load": {
+              "success": 42461,
+              "business_rejection": 2539
+            },
+            "setup": {
+              "success": 100
+            }
+          },
+          "totalRawRows": 45156,
+          "slo": {
+            "basis": "scheduled arrival to completed response, including client queueMs",
+            "querySuccessfulP95Ms": 49.634570998023264,
+            "queryLimitMs": 300,
+            "createSuccessfulP95Ms": 56.44103299709968,
+            "createLimitMs": 500,
+            "querySamples": 32716,
+            "createSamples": 1473,
+            "result": "PASS"
+          },
+          "latencyMs": {
+            "P50": 4.807500998140313,
+            "P95": 44.90826898836531,
+            "P99": 123.55747299443465
+          },
+          "arrivalLatencyMs": {
+            "P50": 5.130941994138993,
+            "P95": 45.4460869950708,
+            "P99": 124.75463398732245
+          },
+          "lateArrivalCount": 45000,
+          "lateOverIntervalCount": 23,
+          "maxLagMs": 187.1938349941047,
+          "queueMsP95": 0.5508920003194362,
+          "completedSessionCount": 0,
+          "failure": null,
+          "summary": "current/mixed-summary.json",
+          "rawRequests": "current/mixed-requests.jsonl.gz"
+        },
+        {
+          "mode": "sessions",
+          "status": "PASS",
+          "parameters": {
+            "mode": "sessions",
+            "duration": 1800.0,
+            "rate": 50,
+            "users": 100,
+            "workers": 64,
+            "seed": 20261018
+          },
+          "loadElapsedSeconds": 1800.055929278009,
+          "scheduledArrivals": 36000,
+          "observedArrivalRows": 36000,
+          "sentArrivals": 36000,
+          "classifications": {
+            "success": 36000
+          },
+          "allPhasesClassifications": {
+            "success": 37231,
+            "business_rejection": 182
+          },
+          "byPhase": {
+            "cleanup": {
+              "business_rejection": 182,
+              "success": 931
+            },
+            "load": {
+              "success": 36000
+            },
+            "setup": {
+              "success": 300
+            }
+          },
+          "totalRawRows": 37413,
+          "slo": {
+            "basis": "scheduled arrival to completed response, including client queueMs",
+            "querySuccessfulP95Ms": null,
+            "queryLimitMs": 300,
+            "createSuccessfulP95Ms": null,
+            "createLimitMs": 500,
+            "querySamples": 0,
+            "createSamples": 0,
+            "result": "NOT_APPLICABLE_DEVICE_EVENT_PHASE"
+          },
+          "latencyMs": {
+            "P50": 5.376700006308965,
+            "P95": 99.55496600014158,
+            "P99": 201.04685200203676
+          },
+          "arrivalLatencyMs": {
+            "P50": 5.715639010304585,
+            "P95": 100.20408799755387,
+            "P99": 201.61979501426686
+          },
+          "lateArrivalCount": 36000,
+          "lateOverIntervalCount": 13,
+          "maxLagMs": 212.78114900633227,
+          "queueMsP95": 0.9089390077861026,
+          "completedSessionCount": 100,
+          "failure": null,
+          "summary": "current/sessions-summary.json",
+          "rawRequests": "current/sessions-requests.jsonl.gz"
+        }
+      ],
+      "safeArtifacts": [
+        "current/run-metadata.json",
+        "current/seed-summary.json",
+        "current/containers-before.json",
+        "current/containers-after.json",
+        "current/docker-stats-before.jsonl",
+        "current/docker-stats-after.jsonl",
+        "current/invariants.tsv",
+        "current/platform-mapping-export.json",
+        "current/mixed-summary.json",
+        "current/mixed-requests.jsonl.gz",
+        "current/sessions-summary.json",
+        "current/sessions-requests.jsonl.gz",
+        "current/queries/payment-expiration.sql",
+        "current/queries/station-cursor-legacy-comparison.sql",
+        "current/queries/station-cursor.sql",
+        "current/queries/user-cursor-legacy-comparison.sql",
+        "current/queries/user-cursor.sql",
+        "current/queries/payment-expiration.explain.json.txt",
+        "current/queries/station-cursor-legacy-comparison.explain.json.txt",
+        "current/queries/station-cursor.explain.json.txt",
+        "current/queries/user-cursor-legacy-comparison.explain.json.txt",
+        "current/queries/user-cursor.explain.json.txt",
+        "current/queries/payment-expiration.analyze.txt",
+        "current/queries/station-cursor-legacy-comparison.analyze.txt",
+        "current/queries/station-cursor.analyze.txt",
+        "current/queries/user-cursor-legacy-comparison.analyze.txt",
+        "current/queries/user-cursor.analyze.txt"
+      ]
+    }
+  ],
+  "schedulerRegression": {
+    "tests": 4,
+    "result": "PASS",
+    "log": "harness/scheduler-regression.log"
+  },
+  "measurementBoundary": {
+    "mixedScope": "Customer stations, own orders, own benefits, quote, create, cancel, claim; no staff station-order list traffic.",
+    "knownStationCursorPlan": "ix_order_station_cursor plus LEFT HASH JOIN and sort scanned569569 rows, actual1307ms; this staff SQL is not covered by mixed query SLO.",
+    "knownUserCursorPlan": "ix_order_user_cursor plus LEFT HASH JOIN and sort scanned10000 rows, actual33.3ms.",
+    "coldSmoke": "Retained FAIL; all29 station wire responses over300ms were in first2.2seconds; no samples removed from any measured window."
+  },
+  "independentChannelProof": "channel-proof.json",
+  "candidateSha": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+  "candidateImageId": "sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714"
+}

@@ -1,0 +1,264 @@
+{
+  "status": "FAIL",
+  "simulated": true,
+  "runId": "dab3d087b7cf",
+  "mode": "mixed",
+  "beganAt": "2026-10-19T16:41:30.908878+00:00",
+  "endedAt": "2026-10-19T16:42:11.834058+00:00",
+  "parameters": {
+    "mode": "mixed",
+    "duration": 10.0,
+    "rate": 50,
+    "users": 100,
+    "workers": 64,
+    "seed": 20261018
+  },
+  "loadElapsedSeconds": 10.005763014007243,
+  "scheduledArrivals": 500,
+  "observedArrivalRows": 500,
+  "sentArrivals": 500,
+  "classifications": {
+    "success": 485,
+    "business_rejection": 15
+  },
+  "completedRequestsPerSecond": 49.971201526564364,
+  "latencyMs": {
+    "P50": 31.91175899701193,
+    "P95": 877.1783700067317,
+    "P99": 2295.0208149995888
+  },
+  "arrivalLatencyMs": {
+    "P50": 32.3151819902705,
+    "P95": 877.347006011405,
+    "P99": 2295.2823849918786
+  },
+  "lateArrivalCount": 500,
+  "lateOverIntervalCount": 0,
+  "maxLagMs": 14.13754399982281,
+  "lateOverIntervalThresholdMs": 20.0,
+  "queueMsP95": 1.9369509973330423,
+  "totalRawRows": 625,
+  "allPhasesClassifications": {
+    "success": 610,
+    "business_rejection": 15
+  },
+  "byPhase": {
+    "cleanup": {
+      "success": 25
+    },
+    "load": {
+      "success": 485,
+      "business_rejection": 15
+    },
+    "setup": {
+      "success": 100
+    }
+  },
+  "perOperation": {
+    "benefits": {
+      "requests": 46,
+      "successfulRequests": 46,
+      "classifications": {
+        "success": 46
+      },
+      "allLatencyMs": {
+        "P50": 6.914298995980062,
+        "P95": 211.38196499668993,
+        "P99": 337.43869300815277
+      },
+      "successfulLatencyMs": {
+        "P50": 6.914298995980062,
+        "P95": 211.38196499668993,
+        "P99": 337.43869300815277
+      },
+      "allArrivalLatencyMs": {
+        "P50": 7.116958004189655,
+        "P95": 211.59954900213052,
+        "P99": 337.97819701430853
+      },
+      "successfulArrivalLatencyMs": {
+        "P50": 7.116958004189655,
+        "P95": 211.59954900213052,
+        "P99": 337.97819701430853
+      }
+    },
+    "cancel": {
+      "requests": 36,
+      "successfulRequests": 36,
+      "classifications": {
+        "success": 36
+      },
+      "allLatencyMs": {
+        "P50": 54.99690800206736,
+        "P95": 169.00961501232814,
+        "P99": 383.855948006385
+      },
+      "successfulLatencyMs": {
+        "P50": 54.99690800206736,
+        "P95": 169.00961501232814,
+        "P99": 383.855948006385
+      },
+      "allArrivalLatencyMs": {
+        "P50": 55.214771011378616,
+        "P95": 169.17745901446324,
+        "P99": 384.07571701100096
+      },
+      "successfulArrivalLatencyMs": {
+        "P50": 55.214771011378616,
+        "P95": 169.17745901446324,
+        "P99": 384.07571701100096
+      }
+    },
+    "claim": {
+      "requests": 11,
+      "successfulRequests": 0,
+      "classifications": {
+        "business_rejection": 11
+      },
+      "allLatencyMs": {
+        "P50": 16.128930990817025,
+        "P95": 100.93557000800502,
+        "P99": 100.93557000800502
+      },
+      "successfulLatencyMs": {
+        "P50": null,
+        "P95": null,
+        "P99": null
+      },
+      "allArrivalLatencyMs": {
+        "P50": 16.354659004718997,
+        "P95": 101.17541500949301,
+        "P99": 101.17541500949301
+      },
+      "successfulArrivalLatencyMs": {
+        "P50": null,
+        "P95": null,
+        "P99": null
+      }
+    },
+    "create": {
+      "requests": 36,
+      "successfulRequests": 32,
+      "classifications": {
+        "success": 32,
+        "business_rejection": 4
+      },
+      "allLatencyMs": {
+        "P50": 42.71189900464378,
+        "P95": 548.9167430059751,
+        "P99": 601.2864759977674
+      },
+      "successfulLatencyMs": {
+        "P50": 54.504090003320016,
+        "P95": 548.9167430059751,
+        "P99": 601.2864759977674
+      },
+      "allArrivalLatencyMs": {
+        "P50": 43.06304600322619,
+        "P95": 549.2595490068197,
+        "P99": 601.5210699988529
+      },
+      "successfulArrivalLatencyMs": {
+        "P50": 54.67929299629759,
+        "P95": 549.2595490068197,
+        "P99": 601.5210699988529
+      }
+    },
+    "orders": {
+      "requests": 119,
+      "successfulRequests": 119,
+      "classifications": {
+        "success": 119
+      },
+      "allLatencyMs": {
+        "P50": 45.67512900393922,
+        "P95": 170.79711900441907,
+        "P99": 236.08986999897752
+      },
+      "successfulLatencyMs": {
+        "P50": 45.67512900393922,
+        "P95": 170.79711900441907,
+        "P99": 236.08986999897752
+      },
+      "allArrivalLatencyMs": {
+        "P50": 46.373932011192665,
+        "P95": 174.37381400668528,
+        "P99": 236.44156400405336
+      },
+      "successfulArrivalLatencyMs": {
+        "P50": 46.373932011192665,
+        "P95": 174.37381400668528,
+        "P99": 236.44156400405336
+      }
+    },
+    "quote": {
+      "requests": 79,
+      "successfulRequests": 79,
+      "classifications": {
+        "success": 79
+      },
+      "allLatencyMs": {
+        "P50": 11.150684003951028,
+        "P95": 98.76193100353703,
+        "P99": 388.1233389984118
+      },
+      "successfulLatencyMs": {
+        "P50": 11.150684003951028,
+        "P95": 98.76193100353703,
+        "P99": 388.1233389984118
+      },
+      "allArrivalLatencyMs": {
+        "P50": 11.624328995821998,
+        "P95": 98.91353800776415,
+        "P99": 388.29937399714254
+      },
+      "successfulArrivalLatencyMs": {
+        "P50": 11.624328995821998,
+        "P95": 98.91353800776415,
+        "P99": 388.29937399714254
+      }
+    },
+    "stations": {
+      "requests": 173,
+      "successfulRequests": 173,
+      "classifications": {
+        "success": 173
+      },
+      "allLatencyMs": {
+        "P50": 9.094891996937804,
+        "P95": 1799.9337669898523,
+        "P99": 2440.6807550112717
+      },
+      "successfulLatencyMs": {
+        "P50": 9.094891996937804,
+        "P95": 1799.9337669898523,
+        "P99": 2440.6807550112717
+      },
+      "allArrivalLatencyMs": {
+        "P50": 9.390524006448686,
+        "P95": 1800.7668039936107,
+        "P99": 2441.0162300046068
+      },
+      "successfulArrivalLatencyMs": {
+        "P50": 9.390524006448686,
+        "P95": 1800.7668039936107,
+        "P99": 2441.0162300046068
+      }
+    }
+  },
+  "slo": {
+    "basis": "scheduled arrival to completed response, including client queueMs",
+    "querySuccessfulP95Ms": 1195.0303110061213,
+    "queryLimitMs": 300,
+    "createSuccessfulP95Ms": 549.2595490068197,
+    "createLimitMs": 500,
+    "querySamples": 367,
+    "createSamples": 32,
+    "result": "FAIL"
+  },
+  "completedSessionCount": 0,
+  "sessionResults": [],
+  "rawRequests": "requests.jsonl",
+  "failure": null,
+  "scope": "Measured synthetic isolated load. This report is not a production throughput claim."
+}

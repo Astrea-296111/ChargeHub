@@ -1,0 +1,184 @@
+{
+  "status": "PASS",
+  "simulated": true,
+  "runId": "dab3d087b7cf",
+  "mode": "mixed",
+  "beganAt": "2026-10-19T16:19:18.061836+00:00",
+  "endedAt": "2026-10-19T16:19:59.342345+00:00",
+  "parameters": {
+    "mode": "mixed",
+    "duration": 10.0,
+    "rate": 50,
+    "users": 100,
+    "workers": 64,
+    "seed": 20261018
+  },
+  "loadElapsedSeconds": 10.001669027013122,
+  "scheduledArrivals": 500,
+  "observedArrivalRows": 500,
+  "sentArrivals": 500,
+  "classifications": {
+    "success": 496,
+    "business_rejection": 4
+  },
+  "completedRequestsPerSecond": 49.991656257527545,
+  "latencyMs": {
+    "P50": 13.87265999801457,
+    "P95": 112.76213399833068,
+    "P99": 266.1545980081428
+  },
+  "queueMsP95": 1.2967510119779035,
+  "totalRawRows": 625,
+  "allPhasesClassifications": {
+    "success": 621,
+    "business_rejection": 4
+  },
+  "byPhase": {
+    "cleanup": {
+      "success": 25
+    },
+    "load": {
+      "success": 496,
+      "business_rejection": 4
+    },
+    "setup": {
+      "success": 100
+    }
+  },
+  "perOperation": {
+    "benefits": {
+      "requests": 46,
+      "successfulRequests": 46,
+      "classifications": {
+        "success": 46
+      },
+      "allLatencyMs": {
+        "P50": 5.085559998406097,
+        "P95": 36.197135006659664,
+        "P99": 65.20391399681102
+      },
+      "successfulLatencyMs": {
+        "P50": 5.085559998406097,
+        "P95": 36.197135006659664,
+        "P99": 65.20391399681102
+      }
+    },
+    "cancel": {
+      "requests": 36,
+      "successfulRequests": 36,
+      "classifications": {
+        "success": 36
+      },
+      "allLatencyMs": {
+        "P50": 39.791567003703676,
+        "P95": 160.35555298731197,
+        "P99": 181.27548499614932
+      },
+      "successfulLatencyMs": {
+        "P50": 39.791567003703676,
+        "P95": 160.35555298731197,
+        "P99": 181.27548499614932
+      }
+    },
+    "claim": {
+      "requests": 11,
+      "successfulRequests": 11,
+      "classifications": {
+        "success": 11
+      },
+      "allLatencyMs": {
+        "P50": 12.965987989446148,
+        "P95": 85.6616649980424,
+        "P99": 85.6616649980424
+      },
+      "successfulLatencyMs": {
+        "P50": 12.965987989446148,
+        "P95": 85.6616649980424,
+        "P99": 85.6616649980424
+      }
+    },
+    "create": {
+      "requests": 36,
+      "successfulRequests": 32,
+      "classifications": {
+        "success": 32,
+        "business_rejection": 4
+      },
+      "allLatencyMs": {
+        "P50": 29.710057002375834,
+        "P95": 369.87843399401754,
+        "P99": 415.88644300645683
+      },
+      "successfulLatencyMs": {
+        "P50": 33.00061100162566,
+        "P95": 369.87843399401754,
+        "P99": 415.88644300645683
+      }
+    },
+    "orders": {
+      "requests": 119,
+      "successfulRequests": 119,
+      "classifications": {
+        "success": 119
+      },
+      "allLatencyMs": {
+        "P50": 36.700858996482566,
+        "P95": 146.62759999919217,
+        "P99": 261.8163360020844
+      },
+      "successfulLatencyMs": {
+        "P50": 36.700858996482566,
+        "P95": 146.62759999919217,
+        "P99": 261.8163360020844
+      }
+    },
+    "quote": {
+      "requests": 79,
+      "successfulRequests": 79,
+      "classifications": {
+        "success": 79
+      },
+      "allLatencyMs": {
+        "P50": 7.452313991962001,
+        "P95": 41.27494200656656,
+        "P99": 142.3051429883344
+      },
+      "successfulLatencyMs": {
+        "P50": 7.452313991962001,
+        "P95": 41.27494200656656,
+        "P99": 142.3051429883344
+      }
+    },
+    "stations": {
+      "requests": 173,
+      "successfulRequests": 173,
+      "classifications": {
+        "success": 173
+      },
+      "allLatencyMs": {
+        "P50": 6.388851994415745,
+        "P95": 49.201301007997245,
+        "P99": 278.51772400026675
+      },
+      "successfulLatencyMs": {
+        "P50": 6.388851994415745,
+        "P95": 49.201301007997245,
+        "P99": 278.51772400026675
+      }
+    }
+  },
+  "slo": {
+    "querySuccessfulP95Ms": 112.13703000976238,
+    "queryLimitMs": 300,
+    "createSuccessfulP95Ms": 369.87843399401754,
+    "createLimitMs": 500,
+    "querySamples": 367,
+    "createSamples": 32,
+    "result": "PASS"
+  },
+  "completedSessionCount": 0,
+  "sessionResults": [],
+  "rawRequests": "requests.jsonl",
+  "failure": null,
+  "scope": "Measured synthetic isolated load. This report is not a production throughput claim."
+}

@@ -263,6 +263,7 @@ def main():
     args=parser.parse_args()
     args.duration=args.duration or (900 if args.mode=='mixed' else 1800)
     if not 1<=args.users<=100 or args.duration<=0 or args.rate<=0: raise SystemExit('Invalid load parameters')
+    effective_rate=args.rate if args.mode=='mixed' else args.users/5
     directory=Path('/reports')/args.mode;directory.mkdir(parents=True,exist_ok=True)
     OUT=(directory/'requests.jsonl').open('w',buffering=1)
     began=now()
@@ -302,8 +303,9 @@ def main():
             'classifications':dict(counts),'completedRequestsPerSecond':len(sent)/elapsed if elapsed else 0,
             'latencyMs':{'P50':percentile(latencies,.5),'P95':percentile(latencies,.95),'P99':percentile(latencies,.99)},
             'arrivalLatencyMs':{'P50':percentile(arrival_latencies,.5),'P95':percentile(arrival_latencies,.95),'P99':percentile(arrival_latencies,.99)},
-            'lateArrivalCount':sum(lag>0 for lag in lags),'lateOverIntervalCount':sum(lag>1000/args.rate for lag in lags),
-            'maxLagMs':max(lags,default=0),'lateOverIntervalThresholdMs':1000/args.rate,
+            'effectiveArrivalRateRps':effective_rate,
+            'lateArrivalCount':sum(lag>0 for lag in lags),'lateOverIntervalCount':sum(lag>1000/effective_rate for lag in lags),
+            'maxLagMs':max(lags,default=0),'lateOverIntervalThresholdMs':1000/effective_rate,
             'queueMsP95':percentile([r.get('queueMs',0) for r in sent],.95),'totalRawRows':len(ROWS),
             'allPhasesClassifications':dict(Counter(r['classification'] for r in ROWS)),
             'byPhase':{phase:dict(Counter(r['classification'] for r in ROWS if r['phase']==phase)) for phase in sorted({r['phase'] for r in ROWS})},

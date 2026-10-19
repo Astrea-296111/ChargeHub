@@ -1,0 +1,33 @@
+{
+  "status": "PASS",
+  "capturedAt": "2026-10-19T17:37:37.868051+00:00",
+  "scope": "Final main development DB-polling deployment with monitoring. Performance used its separate fixed-image isolated project.",
+  "applications": [
+    {
+      "name": "chargehub-api-1",
+      "imageId": "sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714",
+      "revision": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+      "state": "running",
+      "health": "healthy",
+      "messagingMode": "db"
+    },
+    {
+      "name": "chargehub-worker-1",
+      "imageId": "sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714",
+      "revision": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+      "state": "running",
+      "health": "healthy",
+      "messagingMode": "db"
+    },
+    {
+      "name": "chargehub-worker-2",
+      "imageId": "sha256:f02d5d40f034582d85637cc0c9ff1aa353b09489c0f4cdbd1dcdd1b2446cc714",
+      "revision": "9d61589bf96ab8cd0cd12b6de3fe3a936c6092a1",
+      "state": "running",
+      "health": "healthy",
+      "messagingMode": "db"
+    }
+  ],
+  "monitoringReport": "monitoring.json",
+  "invariants": "All business invariant queries returned zero violations"
+}

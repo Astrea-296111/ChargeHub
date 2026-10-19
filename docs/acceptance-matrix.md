@@ -4,7 +4,7 @@
 
 可复核的去敏汇总为 [`evidence/enterprise/java-tests.json`](evidence/enterprise/java-tests.json)、[`evidence/enterprise/mysql-integration.json`](evidence/enterprise/mysql-integration.json)、[`evidence/enterprise/python-tests.json`](evidence/enterprise/python-tests.json)，包含逐方法结果、JUnit XML 摘要哈希、日志哈希及候选源码指纹，不复制 JVM 属性、环境变量或私密日志。旧 `docs/evidence/` 根目录的记录仍保留为历史，未用旧报告覆盖新候选。运行镜像 ID 由整栈门禁另行记录。
 
-远端 [9d61589 工作流](https://github.com/Astrea-296111/ChargeHub/actions/runs/39282899907) 的单元/镜像与五组后端任务共6组全部通过，见 [CI汇总](evidence/enterprise/github-ci-9d61589.json)。新增监控门禁、最终镜像无覆盖浏览器及严格响应契约复验仍待执行；A47尚未通过。
+远端提交 `aaa2c265037249044c174abe3f5fc4f997b2d0e6` 的 [实际工作流](https://github.com/Astrea-296111/ChargeHub/actions/runs/39287529175) 已7组全部PASS：unit/images与六组backend，包含实时监控，见 [CI汇总](evidence/enterprise/github-ci-aaa2c26.json)。该提交仅更新工具、文档及监控门禁；持续压测仍固定9d61589/f02应用候选。本机最终监控、四角色无覆盖浏览器及34项严格响应契约复验均通过，见 [最终部署](evidence/enterprise/runtime-final.json)。A47完整重跑与独立渠道逐笔核对已通过，保留历史失败。
 
 **PASS**均注明实际验证层：真实 InnoDB/本地 Tomcat HTTP、纯计费函数或独立模拟器契约；不将这些结果冒充 Compose 进程崩溃、真实 Broker 故障、Redis 服务端停机、完整应用回滚或性能目标通过。**部分验证**表示已完成的子项有证据，完整场景仍待验证；**待验证**表示对应门禁尚无当前候选成功证据。跳过、仅 Broker 连通和仅断开测试连接工厂不等于完整故障验收通过。
 
@@ -69,13 +69,13 @@
 | A44 | 相同渠道账单重复/并发导入只一批、不重复补录 | `R` 的并发 12 导入；F 的幂等导入与 recoverBatch | **PASS（真实 MySQL）**：本次 R/F 均通过，12 并发导入一个批次，相同幂等导入/补录无二次现金效果 |
 | A45 | 对账金额不符保留双方证据，DIFF 阻止财务闭合 | F 的 A45；R 的双向差异/冲突方法 | **PASS（真实 MySQL）**：F 保留渠道 9999 与本地 10000 证据，原现金不变且 financial_status=DIFF，财务不能错误闭合 |
 | A46 | 应用切回旧镜像、迁移兼容，数据库及模拟器事实可恢复 | `scripts/deployment/rollback.py`；`sqlite-snapshot.py` | **PASS（真实旧镜像＋全新恢复副本）**：[完整报告](evidence/enterprise/rollback.json) 记录旧版空库、新版V1–V8与签名交易、旧镜像读取升级数据的11表逐行hash不变，再恢复MySQL到新库和双SQLite到新卷后由候选读取；零不变量违规。2项WAL/校验和工具回归通过，失败历史保留 |
-| A47 | 50RPS×15分钟、100会话×30分钟、百万历史、索引计划和P95目标 | `scripts/performance/run.py --phase all --history 1000000`；`scripts/performance/load.py` | **FAIL，尚未通过**：既有15分钟轮次计划45000次，22次scheduler_lag漏发，实际发出44978次，其中42531成功、2447业务拒绝，技术错误/超时均0。新的完整重跑尚未完成；固定镜像、逐请求数据、索引计划及资源快照仍须随完整结果核验 |
+| A47 | 50RPS×15分钟、100会话×30分钟、百万历史、索引计划和P95目标 | `scripts/performance/run.py --phase all --history 1000000`；`scripts/performance/load.py` | **PASS（核心模拟场景）**：[完整证据](evidence/enterprise/performance/README.md)，固定9d/f02，百万历史，45000混合+36000计量请求全发，技术错误/超时/漏发0；含排队成功查询/建单P95为49.63/56.44ms。100会话COMPLETED/CLOSED，100独立捕获/退款逐笔一致，零不变量违规。管理端站点历史SQL约1307ms不在混合SLO中；旧22漏发与冷态FAIL均保留 |
 
 
 本轮全量执行的 `selectedTests=null`，9 个隔离测试库全部建立，128 项 Java 测试均未跳过，专用 Redis 测试容器在完成后清理。JUnit XML 与日志汇总类集合一致（26 类），逐方法结果及摘要见 J；同一运行的数据库名和完成标记见 enterprise/mysql-integration.json。源码审计确认本次 120 个 Java/迁移/POM 文件与候选 Git SHA 一致。
 
 Q 的同一次运行还遇到宿主磁盘空间不足，Broker 原日志显示 `message store is not writeable, so putMessage is forbidden 16`。释放空间后原 Outbox 自动退避重试成功，没有重置计数、改写资金事实或降低 Broker 磁盘保护阈值；A41 后窗口的发布次数 7 如实保留。该环境中断及原始证据路径记录在 Q 的 `environmentIncident`，没有通过重新运行隐藏中断。
 
-A39 的真实 Redis 服务端故障与 A46 的完整回滚/卷恢复已有上述 PASS 证据。A47 保留既有失败结果，新的完整持续负载重跑尚未完成；历史失败日志保留。
+A39 的真实 Redis 服务端故障与 A46 的完整回滚/卷恢复已有上述 PASS 证据。A47 的完整持续负载重跑及100笔独立渠道核对已通过；既有失败结果、逐请求数据与工具源码版本均保留。
 
 更新为 PASS 时至少记录：候选 Git SHA 或源码指纹、构建镜像 ID、实际执行时间、MySQL/Redis/RocketMQ 版本、具名测试/故障步骤、预期及实际值、原始报告位置。模拟支付/设备数据应始终标注模拟环境。远端 CI 已执行的范围以对应提交的实际任务结果为准，后续新增门禁须另行验证。

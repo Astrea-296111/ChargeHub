@@ -1,0 +1,1 @@
+SELECT o.id,o.order_no,o.station_id,o.connector_id,o.status,o.financial_status,o.prepaid_fen,o.exception_code,o.created_at,s.session_no FROM charge_order o LEFT JOIN charge_session s ON s.order_no=o.order_no WHERE (o.created_at>'2025-01-06 00:00:00' OR (o.created_at='2025-01-06 00:00:00' AND o.id>1)) AND o.station_id=1 ORDER BY o.created_at,o.id LIMIT 21;
